@@ -1,0 +1,47 @@
+name: Winner Engine
+
+# Runs the full pipeline on a schedule: inventory snapshot → ad verification →
+# winner recomputation. Also runnable on demand from the Actions tab.
+on:
+  schedule:
+    # Every 6 hours (UTC). Frequent enough to catch fast depletion early.
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: winner-engine
+  cancel-in-progress: false
+
+jobs:
+  run-engine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+      META_GRAPH_API_VERSION: ${{ vars.META_GRAPH_API_VERSION || 'v21.0' }}
+      META_REACHED_COUNTRIES: ${{ vars.META_REACHED_COUNTRIES || 'DZ' }}
+      CRAWLEE_PERSIST_STORAGE: "false"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Inventory snapshot
+        run: npm run engine:inventory
+
+      - name: Meta ad verification
+        run: npm run engine:ads
+        continue-on-error: true
+
+      - name: Recompute winners
+        run: npm run engine:winners
