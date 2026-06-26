@@ -44,6 +44,7 @@
   "Dashboard": {
     "navWinners": "Winners",
     "navLeads": "Leads",
+    "navBilling": "Billing",
     "signOut": "Sign out",
     "winnersTitle": "Winner Product Radar",
     "winnersSubtitle": "Confirmed winners: rapid stock depletion backed by active Meta ads.",
@@ -54,6 +55,8 @@
     "daysAgo": "{days}d ago",
     "activeAdsCount": "{count} active ads",
     "noAds": "No active ads found.",
+    "activeVideoAd": "Active video ad",
+    "activeAd": "Active ad",
     "running": "Running since",
     "viewInLibrary": "View in Ad Library",
     "searchPlaceholder": "Search products or stores…",
@@ -103,5 +106,30 @@
     "sendEmail": "Send via Resend",
     "openInMail": "Open in mail app",
     "sent": "Email sent successfully."
+  },
+  "Billing": {
+    "title": "Billing & Plans",
+    "subtitle": "Upgrade to unlock the full Winner Radar. Pay in DZD via Edahabia or CIB.",
+    "currentPlan": "Current plan",
+    "perMonth": "/ month",
+    "upgrade": "Upgrade",
+    "yourPlan": "Your plan",
+    "popular": "Most popular",
+    "securedBy": "Secured payments by Chargily Pay — Edahabia & CIB.",
+    "tier_free": "Free trial",
+    "tier_starter": "Starter",
+    "tier_pro": "Pro",
+    "tier_agency": "Agency",
+    "feat_starter1": "Up to 50 tracked stores",
+    "feat_starter2": "Daily winner refresh",
+    "feat_starter3": "Email support",
+    "feat_pro1": "Unlimited tracked stores",
+    "feat_pro2": "6-hour winner refresh",
+    "feat_pro3": "AI cold outreach",
+    "feat_pro4": "Priority support",
+    "feat_agency1": "Everything in Pro",
+    "feat_agency2": "5 team seats",
+    "feat_agency3": "API access",
+    "feat_agency4": "Dedicated manager"
   }
 }

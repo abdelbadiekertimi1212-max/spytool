@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { sendOutreachEmail } from "@/lib/resend";
+import { rateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +19,19 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { data: subTier } = await supabase
+    .from("subscriptions")
+    .select("package_tier")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const rl = await rateLimit(`outreach-send:${user.id}`, subTier?.package_tier ?? "free");
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Upgrade your plan for higher limits." },
+      { status: 429 }
+    );
   }
 
   let payload: { to?: string; subject?: string; text?: string };

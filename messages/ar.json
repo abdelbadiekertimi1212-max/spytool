@@ -44,6 +44,7 @@
   "Dashboard": {
     "navWinners": "الرابحة",
     "navLeads": "العملاء",
+    "navBilling": "الفوترة",
     "signOut": "تسجيل الخروج",
     "winnersTitle": "رادار المنتجات الرابحة",
     "winnersSubtitle": "منتجات رابحة مؤكدة: نفاد سريع للمخزون مدعوم بإعلانات ميتا نشطة.",
@@ -54,6 +55,8 @@
     "daysAgo": "قبل {days} يوم",
     "activeAdsCount": "{count} إعلانات نشطة",
     "noAds": "لا توجد إعلانات نشطة.",
+    "activeVideoAd": "إعلان فيديو نشط",
+    "activeAd": "إعلان نشط",
     "running": "نشط منذ",
     "viewInLibrary": "عرض في مكتبة الإعلانات",
     "searchPlaceholder": "ابحث عن منتجات أو متاجر…",
@@ -103,5 +106,30 @@
     "sendEmail": "إرسال عبر Resend",
     "openInMail": "فتح في تطبيق البريد",
     "sent": "تم إرسال البريد بنجاح."
+  },
+  "Billing": {
+    "title": "الفوترة والباقات",
+    "subtitle": "قم بالترقية لفتح رادار المنتجات الرابحة بالكامل. ادفع بالدينار الجزائري عبر الذهبية أو CIB.",
+    "currentPlan": "الباقة الحالية",
+    "perMonth": "/ شهريًا",
+    "upgrade": "ترقية",
+    "yourPlan": "باقتك",
+    "popular": "الأكثر شيوعًا",
+    "securedBy": "مدفوعات آمنة عبر Chargily Pay — الذهبية وCIB.",
+    "tier_free": "تجربة مجانية",
+    "tier_starter": "Starter",
+    "tier_pro": "Pro",
+    "tier_agency": "وكالة",
+    "feat_starter1": "حتى 50 متجرًا متتبَّعًا",
+    "feat_starter2": "تحديث يومي للمنتجات الرابحة",
+    "feat_starter3": "دعم عبر البريد الإلكتروني",
+    "feat_pro1": "متاجر متتبَّعة بلا حدود",
+    "feat_pro2": "تحديث كل 6 ساعات",
+    "feat_pro3": "تواصل بارد بالذكاء الاصطناعي",
+    "feat_pro4": "دعم ذو أولوية",
+    "feat_agency1": "كل ما في Pro",
+    "feat_agency2": "5 مقاعد للفريق",
+    "feat_agency3": "وصول API",
+    "feat_agency4": "مدير مخصص"
   }
 }

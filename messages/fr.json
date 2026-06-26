@@ -44,6 +44,7 @@
   "Dashboard": {
     "navWinners": "Gagnants",
     "navLeads": "Leads",
+    "navBilling": "Facturation",
     "signOut": "Déconnexion",
     "winnersTitle": "Radar des produits gagnants",
     "winnersSubtitle": "Gagnants confirmés : épuisement rapide du stock soutenu par des publicités Meta actives.",
@@ -54,6 +55,8 @@
     "daysAgo": "il y a {days}j",
     "activeAdsCount": "{count} pubs actives",
     "noAds": "Aucune publicité active trouvée.",
+    "activeVideoAd": "Pub vidéo active",
+    "activeAd": "Pub active",
     "running": "Diffusée depuis",
     "viewInLibrary": "Voir dans la bibliothèque",
     "searchPlaceholder": "Rechercher produits ou boutiques…",
@@ -103,5 +106,30 @@
     "sendEmail": "Envoyer via Resend",
     "openInMail": "Ouvrir dans l'app mail",
     "sent": "E-mail envoyé avec succès."
+  },
+  "Billing": {
+    "title": "Facturation & Forfaits",
+    "subtitle": "Passez à un forfait pour débloquer tout le Winner Radar. Paiement en DZD via Edahabia ou CIB.",
+    "currentPlan": "Forfait actuel",
+    "perMonth": "/ mois",
+    "upgrade": "Mettre à niveau",
+    "yourPlan": "Votre forfait",
+    "popular": "Le plus populaire",
+    "securedBy": "Paiements sécurisés par Chargily Pay — Edahabia & CIB.",
+    "tier_free": "Essai gratuit",
+    "tier_starter": "Starter",
+    "tier_pro": "Pro",
+    "tier_agency": "Agence",
+    "feat_starter1": "Jusqu'à 50 boutiques suivies",
+    "feat_starter2": "Actualisation quotidienne des gagnants",
+    "feat_starter3": "Support par e-mail",
+    "feat_pro1": "Boutiques suivies illimitées",
+    "feat_pro2": "Actualisation toutes les 6 h",
+    "feat_pro3": "Prospection IA",
+    "feat_pro4": "Support prioritaire",
+    "feat_agency1": "Tout ce qui est dans Pro",
+    "feat_agency2": "5 sièges d'équipe",
+    "feat_agency3": "Accès API",
+    "feat_agency4": "Gestionnaire dédié"
   }
 }

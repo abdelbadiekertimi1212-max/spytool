@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import type { WinnerProduct } from "@/lib/dashboard/types";
+import { AdCreative } from "./ad-creative";
 import { Badge } from "@/components/ui/badge";
 import { formatDZD, formatNumber, daysSince } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -125,26 +126,7 @@ export function WinnerCard({ winner, index }: { winner: WinnerProduct; index: nu
                   key={ad.id}
                   className="overflow-hidden rounded-lg border bg-background/50"
                 >
-                  {ad.ad_creative_url ? (
-                    ad.creative_type === "video" ? (
-                      <video
-                        src={ad.ad_creative_url}
-                        controls
-                        playsInline
-                        className="aspect-video w-full bg-black object-contain"
-                      />
-                    ) : (
-                      // fbcdn creatives: plain img to avoid optimizer hotlink issues.
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={ad.ad_creative_url}
-                        alt={ad.ad_copy ?? "ad creative"}
-                        referrerPolicy="no-referrer"
-                        loading="lazy"
-                        className="max-h-48 w-full object-cover"
-                      />
-                    )
-                  ) : null}
+                  <AdCreative ad={ad} />
                   <div className="space-y-1 p-2">
                     {ad.ad_copy ? (
                       <p className="line-clamp-3 text-xs text-foreground/90">
