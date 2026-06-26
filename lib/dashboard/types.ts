@@ -1,9 +1,12 @@
 import type { Ad, Product, Store } from "@/types/supabase";
 
-/** A winning product joined with its store and active ads (feed card data). */
+/**
+ * A tracked product joined with its store and the store's ads. Ads are linked
+ * at the STORE level (ads.product_id is usually null), so the feed card reads
+ * `store.ads`, not a per-product ads array.
+ */
 export type WinnerProduct = Product & {
-  store: Store | null;
-  ads: Ad[];
+  store: (Store & { ads: Ad[] }) | null;
 };
 
 /** A B2B lead row: a store enriched with winner/velocity aggregates. */

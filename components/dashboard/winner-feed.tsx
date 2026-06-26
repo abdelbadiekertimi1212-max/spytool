@@ -12,7 +12,7 @@ import { daysSince } from "@/lib/format";
 type SortKey = "velocity" | "ads" | "newest" | "price";
 
 function activeAdCount(w: WinnerProduct): number {
-  return w.ads.filter((a) => a.is_active).length;
+  return (w.store?.ads ?? []).filter((a) => a.is_active).length;
 }
 
 const selectClass =

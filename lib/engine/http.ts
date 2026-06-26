@@ -61,6 +61,36 @@ export async function fetchWithTimeout(
   }
 }
 
+/**
+ * Make scraped free-text safe for Postgres/PostgREST insertion. PostgREST
+ * populates rows through Postgres JSON functions, so a NUL byte, a stray
+ * control char, or a lone UTF-16 surrogate (e.g. from naive truncation that
+ * splits an emoji) triggers "invalid input syntax for type json".
+ *
+ * Iterating with for..of yields whole code points, so valid emoji (surrogate
+ * pairs) are preserved while lone surrogates surface as a single 0xD800-0xDFFF
+ * code point and are dropped. Truncation counts code points, never splitting a pair.
+ */
+export function sanitizeText(
+  value: string | null | undefined,
+  maxLen = 2000
+): string | null {
+  if (value === null || value === undefined) return null;
+  const out: string[] = [];
+  for (const ch of String(value)) {
+    const code = ch.codePointAt(0) ?? 0;
+    // Skip C0 controls except tab (9), newline (10), carriage return (13).
+    if (code < 0x20 && code !== 9 && code !== 10 && code !== 13) continue;
+    // Skip DEL + C1 control range.
+    if (code >= 0x7f && code <= 0x9f) continue;
+    // Skip lone surrogates (paired surrogates already merged into one code point).
+    if (code >= 0xd800 && code <= 0xdfff) continue;
+    out.push(ch);
+    if (out.length >= maxLen) break;
+  }
+  return out.join("").trim();
+}
+
 export function originOf(url: string): string {
   try {
     return new URL(url).origin;

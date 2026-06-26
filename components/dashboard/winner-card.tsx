@@ -27,7 +27,7 @@ export function WinnerCard({ winner, index }: { winner: WinnerProduct; index: nu
   const t = useTranslations("Dashboard");
   const [showAds, setShowAds] = useState(false);
 
-  const activeAds = winner.ads.filter((a) => a.is_active);
+  const activeAds = (winner.store?.ads ?? []).filter((a) => a.is_active);
   const sinceDays = daysSince(winner.winner_since);
 
   return (
@@ -53,11 +53,17 @@ export function WinnerCard({ winner, index }: { winner: WinnerProduct; index: nu
           </div>
         )}
         <div className="absolute inset-x-0 top-0 flex items-start justify-between p-2">
-          <Badge variant="winner" className="gap-1 shadow">
-            <Flame className="h-3 w-3" />
-            {t("winner")}
-          </Badge>
-          {sinceDays !== null ? (
+          {winner.is_winner ? (
+            <Badge variant="winner" className="gap-1 shadow">
+              <Flame className="h-3 w-3" />
+              {t("winner")}
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="gap-1 shadow">
+              {t("tracking")}
+            </Badge>
+          )}
+          {winner.is_winner && sinceDays !== null ? (
             <span className="rounded-full bg-black/60 px-2 py-0.5 text-xs text-white backdrop-blur">
               {t("daysAgo", { days: sinceDays })}
             </span>

@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "../../types/supabase";
 import type { NormalizedAd, ScrapeResult } from "./types";
+import { sanitizeText } from "./http";
 
 type Client = SupabaseClient<Database>;
 type ProductInsert = Database["public"]["Tables"]["products"]["Insert"];
@@ -28,8 +29,8 @@ export async function persistScrape(
     store_id: storeId,
     external_id: p.externalId,
     handle: p.handle,
-    title: p.title,
-    description: p.description,
+    title: sanitizeText(p.title, 300) ?? p.title,
+    description: sanitizeText(p.description, 2000),
     price: p.price,
     compare_at_price: p.compareAtPrice,
     currency: p.currency,
@@ -118,8 +119,8 @@ export async function persistAds(
       // Prefer the real scraped creative media; fall back to the library link.
       ad_creative_url: ad.mediaUrl ?? ad.snapshotUrl,
       creative_type: ad.creativeType,
-      ad_copy: ad.adCopy,
-      cta_text: ad.ctaText,
+      ad_copy: sanitizeText(ad.adCopy, 2000),
+      cta_text: sanitizeText(ad.ctaText, 200),
       landing_url: ad.snapshotUrl ?? ad.landingUrl,
       platform: ad.platform,
       start_date: ad.startDate ? ad.startDate.slice(0, 10) : null,

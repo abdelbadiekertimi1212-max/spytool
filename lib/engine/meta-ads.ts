@@ -136,7 +136,8 @@ export class MetaAdLibraryScraper {
           creativeType: card.mediaType === "video" ? "video" : "image",
           startDate: parseStartDate(card.startedRunning),
           endDate: null,
-          isActive: card.active,
+          // The search is filtered to active_status=active, so every result is active.
+          isActive: true,
           raw: card,
         });
         if (ads.length >= maxAdsPerStore) break;
@@ -195,12 +196,16 @@ function extractAdCards(): RawAdCard[] {
     const libraryId = idMatch[1];
     if (seen.has(libraryId)) continue;
 
-    // Climb to a card-like ancestor: one that also contains a creative image
-    // or video, or grows large enough to be the whole card.
+    // Climb to a card-like ancestor — but STOP before an ancestor that merges
+    // multiple "Library ID"s (that would be a grid of sibling cards, causing
+    // shared/over-climbed content like leaked dropdown text or one shared video).
     let card: HTMLElement = leaf as HTMLElement;
-    for (let hops = 0; hops < 8; hops += 1) {
+    for (let hops = 0; hops < 10; hops += 1) {
       const parent = card.parentElement;
       if (!parent) break;
+      const libCount = ((parent.textContent || "").match(/Library ID/gi) || [])
+        .length;
+      if (libCount > 1) break; // climbing further would absorb sibling cards
       card = parent;
       if (
         card.querySelector("img, video") &&
@@ -252,22 +257,20 @@ function extractAdCards(): RawAdCard[] {
       }
     }
 
-    // Ad copy: longest text block among descendants that isn't metadata.
-    let copy: string | null = null;
-    let bestLen = 0;
+    // Ad copy: longest leaf text block that isn't metadata or Ad Library chrome.
+    const NOISE =
+      /Started running|Platforms|Sponsored|Active|Inactive|Open Dropdown|See ad details|See summary details|Why am I seeing|ad details|This ad has|Sandwich Islands|Total active time/i;
+    const candidates: string[] = [];
     for (const el of Array.from(card.querySelectorAll("div, span"))) {
       if (el.children.length > 0) continue; // leaf text only
       const t = (el.textContent || "").trim();
-      if (
-        t.length > bestLen &&
-        t.length >= 25 &&
-        !LIB_RE.test(t) &&
-        !/Started running|Platforms|Sponsored|Active|Inactive/i.test(t)
-      ) {
-        bestLen = t.length;
-        copy = t;
-      }
+      if (t.length >= 20 && !LIB_RE.test(t) && !NOISE.test(t)) candidates.push(t);
     }
+    // Prefer Arabic copy (DZ market) to avoid leaking English category/geo labels.
+    const arabic = candidates.filter((t) => /[؀-ۿ]/.test(t));
+    const pool = arabic.length > 0 ? arabic : candidates;
+    pool.sort((a, b) => b.length - a.length);
+    const copy: string | null = pool[0] ?? null;
 
     results.push({
       libraryId,

@@ -14,12 +14,15 @@ export default async function WinnersPage({
   setRequestLocale(params.locale);
 
   const supabase = createClient();
+  // Show all tracked products (winners floated to the top); each product carries
+  // its store and the store's ads so the card can render real active creatives.
   const { data } = await supabase
     .from("products")
-    .select("*, store:stores(*), ads:ads(*)")
-    .eq("is_winner", true)
+    .select("*, store:stores(*, ads(*))")
+    .order("is_winner", { ascending: false })
     .order("daily_velocity", { ascending: false })
-    .limit(120);
+    .order("first_seen_at", { ascending: false })
+    .limit(200);
 
   const winners = (data ?? []) as unknown as WinnerProduct[];
   const t = await getTranslations("Dashboard");
