@@ -1,22 +1,27 @@
 import "dotenv/config";
 
-import { createEngineClient, fetchActiveAds } from "../lib/engine";
+import { createEngineClient, MetaAdLibraryScraper } from "../lib/engine";
 import { persistAds } from "../lib/engine/persistence";
 import { jitter } from "../lib/engine/http";
 
+/** Best search term for a store: its FB page name, else a name derived from the domain. */
+function deriveStoreName(url: string, fallback: string | null): string {
+  if (fallback && fallback.trim()) return fallback.trim();
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    const base = host.split(".")[0];
+    return base.replace(/[-_]+/g, " ");
+  } catch {
+    return fallback ?? url;
+  }
+}
+
 /**
- * Ad-verification pass: query the Meta Ad Library for ACTIVE ads for each store
- * (by Facebook Page ID, falling back to page-name search) and persist them.
- * This supplies the "ad-backing" axis of the winner algorithm.
+ * Ad-verification pass via the public Meta Ad Library website (Playwright
+ * stealth scraper — no official API token). One browser is shared across all
+ * stores; per-store failures are isolated.
  */
 async function main() {
-  const token = process.env.META_ACCESS_TOKEN;
-  if (!token || token === "placeholder") {
-    throw new Error(
-      "META_ACCESS_TOKEN is not configured. Set it before running fetch-ads."
-    );
-  }
-
   const client = createEngineClient();
 
   const { data: stores, error } = await client
@@ -30,26 +35,25 @@ async function main() {
     return;
   }
 
+  const scraper = new MetaAdLibraryScraper();
+  await scraper.init();
+
   let totalAds = 0;
-
-  for (const store of stores) {
-    const pageIds = store.fb_page_id ? [store.fb_page_id] : undefined;
-    const searchTerms = !pageIds ? store.fb_page_name ?? undefined : undefined;
-
-    if (!pageIds && !searchTerms) {
-      console.log(`[ads] skip ${store.url} (no fb_page_id or fb_page_name)`);
-      continue;
+  try {
+    for (const store of stores) {
+      const term = deriveStoreName(store.url, store.fb_page_name);
+      try {
+        const ads = await scraper.search(term);
+        const count = await persistAds(client, store.id, ads);
+        totalAds += count;
+        console.log(`[ads] ${store.url} (q="${term}") → ${count} active ads`);
+      } catch (err) {
+        console.error(`[ads] failed ${store.url}: ${(err as Error).message}`);
+      }
+      await jitter();
     }
-
-    try {
-      const ads = await fetchActiveAds({ accessToken: token, pageIds, searchTerms });
-      const count = await persistAds(client, store.id, ads);
-      totalAds += count;
-      console.log(`[ads] ${store.url} → ${count} active ads`);
-    } catch (err) {
-      console.error(`[ads] failed ${store.url}: ${(err as Error).message}`);
-    }
-    await jitter();
+  } finally {
+    await scraper.close();
   }
 
   console.log(`[ads] done. ${totalAds} active ads across ${stores.length} stores.`);

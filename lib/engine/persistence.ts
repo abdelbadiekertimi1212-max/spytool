@@ -115,15 +115,16 @@ export async function persistAds(
     const rows: AdInsert[] = ads.map((ad) => ({
       store_id: storeId,
       meta_ad_id: ad.metaAdId,
-      ad_creative_url: ad.snapshotUrl,
+      // Prefer the real scraped creative media; fall back to the library link.
+      ad_creative_url: ad.mediaUrl ?? ad.snapshotUrl,
       creative_type: ad.creativeType,
       ad_copy: ad.adCopy,
       cta_text: ad.ctaText,
-      landing_url: ad.landingUrl,
+      landing_url: ad.snapshotUrl ?? ad.landingUrl,
       platform: ad.platform,
       start_date: ad.startDate ? ad.startDate.slice(0, 10) : null,
       end_date: ad.endDate ? ad.endDate.slice(0, 10) : null,
-      is_active: true,
+      is_active: ad.isActive,
       raw: ad.raw as AdInsert["raw"],
     }));
 

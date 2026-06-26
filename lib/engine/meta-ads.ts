@@ -1,141 +1,295 @@
+import { chromium } from "playwright-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import type { Browser } from "playwright";
+
 import { engineConfig } from "./config";
-import { fetchWithTimeout } from "./http";
+import { randomUserAgent, sleep } from "./http";
 import type { NormalizedAd } from "./types";
 
-/**
- * Raw shape of an `ads_archive` node from the Meta Ad Library Graph API.
- * Most creative-body fields are only populated for ads about social issues /
- * elections / politics; for commercial ads we mainly get `ad_snapshot_url`.
- */
-interface MetaAdNode {
-  id: string;
-  page_id?: string;
-  page_name?: string;
-  ad_snapshot_url?: string;
-  ad_creative_bodies?: string[];
-  ad_creative_link_titles?: string[];
-  ad_creative_link_captions?: string[];
-  ad_creative_link_descriptions?: string[];
-  ad_delivery_start_time?: string;
-  ad_delivery_stop_time?: string;
-  publisher_platforms?: string[];
+// Register the stealth plugin once. It patches navigator.webdriver, plugins,
+// WebGL vendor, etc. to reduce automation fingerprinting on facebook.com.
+// (puppeteer-extra-plugin-stealth is compatible with playwright-extra.)
+let stealthRegistered = false;
+function ensureStealth() {
+  if (stealthRegistered) return;
+  // The plugin's type targets puppeteer; playwright-extra accepts it at runtime.
+  (chromium as unknown as { use: (p: unknown) => void }).use(StealthPlugin());
+  stealthRegistered = true;
 }
 
-interface MetaAdResponse {
-  data?: MetaAdNode[];
-  paging?: { cursors?: { after?: string }; next?: string };
-  error?: { message: string; type: string; code: number };
+/** Plain, serializable shape returned from the in-page DOM extraction. */
+interface RawAdCard {
+  libraryId: string;
+  pageName: string | null;
+  copy: string | null;
+  mediaUrl: string | null;
+  mediaType: "image" | "video" | null;
+  startedRunning: string | null;
+  active: boolean;
 }
 
-const FIELDS = [
-  "id",
-  "page_id",
-  "page_name",
-  "ad_snapshot_url",
-  "ad_creative_bodies",
-  "ad_creative_link_titles",
-  "ad_creative_link_captions",
-  "ad_creative_link_descriptions",
-  "ad_delivery_start_time",
-  "ad_delivery_stop_time",
-  "publisher_platforms",
-].join(",");
-
-function mapPlatform(platforms?: string[]): NormalizedAd["platform"] {
-  const first = (platforms?.[0] || "FACEBOOK").toUpperCase();
-  switch (first) {
-    case "INSTAGRAM":
-      return "instagram";
-    case "AUDIENCE_NETWORK":
-      return "audience_network";
-    case "MESSENGER":
-      return "messenger";
-    default:
-      return "facebook";
-  }
-}
-
-function normalize(node: MetaAdNode): NormalizedAd {
-  return {
-    metaAdId: node.id,
-    pageId: node.page_id ?? null,
-    pageName: node.page_name ?? null,
-    adCopy: node.ad_creative_bodies?.[0] ?? null,
-    ctaText: node.ad_creative_link_titles?.[0] ?? null,
-    snapshotUrl: node.ad_snapshot_url ?? null,
-    landingUrl: node.ad_creative_link_captions?.[0] ?? null,
-    platform: mapPlatform(node.publisher_platforms),
-    // The API does not expose the media type for commercial ads; default to
-    // image and let the Phase 3 snapshot resolver refine it.
-    creativeType: "image",
-    startDate: node.ad_delivery_start_time ?? null,
-    endDate: node.ad_delivery_stop_time ?? null,
-    raw: node,
-  };
-}
-
-export interface FetchAdsParams {
-  accessToken: string;
-  /** Exact Facebook Page IDs to match. Preferred over free-text search. */
-  pageIds?: string[];
-  /** Free-text fallback (store/brand name) when a Page ID is unknown. */
-  searchTerms?: string;
-}
-
-/**
- * Fetch currently ACTIVE ads from the Meta Ad Library for the given page(s) or
- * search term, restricted to the configured reached countries (default DZ).
- * Follows pagination up to `engineConfig.meta.maxPages`.
- */
-export async function fetchActiveAds({
-  accessToken,
-  pageIds,
-  searchTerms,
-}: FetchAdsParams): Promise<NormalizedAd[]> {
-  if (!accessToken) {
-    throw new Error("META_ACCESS_TOKEN is required to query the Ad Library.");
-  }
-  if ((!pageIds || pageIds.length === 0) && !searchTerms) {
-    return [];
-  }
-
-  const { apiVersion, reachedCountries, pageSize, maxPages } =
-    engineConfig.meta;
-
+function buildSearchUrl(term: string, country: string): string {
   const params = new URLSearchParams({
-    access_token: accessToken,
-    ad_type: "ALL",
-    ad_active_status: "ACTIVE",
-    ad_reached_countries: JSON.stringify(reachedCountries),
-    fields: FIELDS,
-    limit: String(pageSize),
+    active_status: "active",
+    ad_type: "all",
+    country,
+    q: term,
+    search_type: "keyword_unordered",
+    media_type: "all",
   });
+  return `https://www.facebook.com/ads/library/?${params.toString()}`;
+}
 
-  if (pageIds && pageIds.length > 0) {
-    params.set("search_page_ids", JSON.stringify(pageIds));
-  } else if (searchTerms) {
-    params.set("search_terms", searchTerms);
+function parseStartDate(text: string | null): string | null {
+  if (!text) return null;
+  // e.g. "Started running on Jun 1, 2025" or "1 Jun 2025"
+  const cleaned = text.replace(/^.*running on\s*/i, "").trim();
+  const ts = Date.parse(cleaned);
+  if (Number.isNaN(ts)) return null;
+  return new Date(ts).toISOString().slice(0, 10);
+}
+
+function deriveSnapshotUrl(libraryId: string): string {
+  return `https://www.facebook.com/ads/library/?id=${libraryId}`;
+}
+
+/**
+ * Scrapes the PUBLIC Meta Ad Library website using a stealth Playwright browser.
+ * It searches a store's name, scrolls the results, and parses each ad card's
+ * DOM for the library ID, advertiser, copy, creative media URL and run date.
+ *
+ * Note: the Ad Library DOM is obfuscated and changes often; the extraction is
+ * intentionally heuristic (anchored on the stable "Library ID:" label) and
+ * fails soft — returning whatever it can rather than throwing. For high-volume
+ * production use, route this through residential proxies to avoid rate limits.
+ */
+export class MetaAdLibraryScraper {
+  private browser: Browser | null = null;
+
+  async init(): Promise<void> {
+    ensureStealth();
+    this.browser = (await chromium.launch({
+      headless: engineConfig.meta.headless,
+      args: [
+        "--no-sandbox",
+        "--disable-blink-features=AutomationControlled",
+        "--disable-dev-shm-usage",
+      ],
+    })) as unknown as Browser;
   }
 
-  let url = `https://graph.facebook.com/${apiVersion}/ads_archive?${params.toString()}`;
-  const ads: NormalizedAd[] = [];
-
-  for (let page = 0; page < maxPages && url; page += 1) {
-    const response = await fetchWithTimeout(url, { method: "GET" });
-    const body = (await response.json()) as MetaAdResponse;
-
-    if (body.error) {
-      throw new Error(
-        `Meta Ad Library error ${body.error.code}: ${body.error.message}`
-      );
+  async search(searchTerms: string): Promise<NormalizedAd[]> {
+    if (!this.browser) {
+      throw new Error("MetaAdLibraryScraper.init() must be called first.");
     }
+    const term = searchTerms.trim();
+    if (!term) return [];
 
-    for (const node of body.data ?? []) {
-      ads.push(normalize(node));
+    const { searchCountry, maxAdsPerStore, maxScrolls, navTimeoutMs } =
+      engineConfig.meta;
+
+    const context = await this.browser.newContext({
+      userAgent: randomUserAgent(),
+      locale: "fr-FR",
+      viewport: { width: 1366, height: 900 },
+    });
+    const page = await context.newPage();
+
+    try {
+      await page.goto(buildSearchUrl(term, searchCountry), {
+        waitUntil: "domcontentloaded",
+        timeout: navTimeoutMs,
+      });
+
+      await this.dismissConsent(page);
+
+      // Wait for the results region to hydrate; tolerate timeouts (no results).
+      await page
+        .waitForFunction(() => /Library ID/i.test(document.body.innerText), {
+          timeout: 15000,
+        })
+        .catch(() => undefined);
+
+      // Lazy-load more cards by scrolling.
+      for (let i = 0; i < maxScrolls; i += 1) {
+        await page.mouse.wheel(0, 2200);
+        await sleep(1200 + Math.random() * 900);
+      }
+
+      const cards = (await page.evaluate(extractAdCards)) as RawAdCard[];
+
+      const seen = new Set<string>();
+      const ads: NormalizedAd[] = [];
+      for (const card of cards) {
+        if (!card.libraryId || seen.has(card.libraryId)) continue;
+        seen.add(card.libraryId);
+        ads.push({
+          metaAdId: card.libraryId,
+          pageId: null,
+          pageName: card.pageName,
+          adCopy: card.copy,
+          ctaText: null,
+          snapshotUrl: deriveSnapshotUrl(card.libraryId),
+          mediaUrl: card.mediaUrl,
+          landingUrl: null,
+          platform: "facebook",
+          creativeType: card.mediaType === "video" ? "video" : "image",
+          startDate: parseStartDate(card.startedRunning),
+          endDate: null,
+          isActive: card.active,
+          raw: card,
+        });
+        if (ads.length >= maxAdsPerStore) break;
+      }
+      return ads;
+    } finally {
+      await context.close();
     }
-
-    url = body.paging?.next ?? "";
   }
 
-  return ads;
+  private async dismissConsent(page: import("playwright").Page): Promise<void> {
+    const labels = [
+      /allow all cookies/i,
+      /accept all/i,
+      /only allow essential/i,
+      /decline optional cookies/i,
+    ];
+    for (const name of labels) {
+      try {
+        const btn = page.getByRole("button", { name }).first();
+        if (await btn.isVisible({ timeout: 1500 })) {
+          await btn.click({ timeout: 2000 });
+          await sleep(800);
+          return;
+        }
+      } catch {
+        // no consent dialog / different layout — continue
+      }
+    }
+  }
+
+  async close(): Promise<void> {
+    await this.browser?.close();
+    this.browser = null;
+  }
+}
+
+/**
+ * Runs inside the browser (page.evaluate). Must be fully self-contained — it
+ * cannot reference anything from the Node scope. Anchors on the "Library ID:"
+ * label, climbs to a card-like ancestor, and extracts fields heuristically.
+ */
+function extractAdCards(): RawAdCard[] {
+  const LIB_RE = /Library ID:?\s*(\d{6,})/i;
+  const results: RawAdCard[] = [];
+  const seen = new Set<string>();
+
+  // Find near-leaf nodes that directly contain the "Library ID: <n>" text.
+  const candidates = Array.from(document.querySelectorAll("div, span")).filter(
+    (el) => LIB_RE.test(el.textContent || "") && el.children.length <= 2
+  );
+
+  for (const leaf of candidates) {
+    const idMatch = (leaf.textContent || "").match(LIB_RE);
+    if (!idMatch) continue;
+    const libraryId = idMatch[1];
+    if (seen.has(libraryId)) continue;
+
+    // Climb to a card-like ancestor: one that also contains a creative image
+    // or video, or grows large enough to be the whole card.
+    let card: HTMLElement = leaf as HTMLElement;
+    for (let hops = 0; hops < 8; hops += 1) {
+      const parent = card.parentElement;
+      if (!parent) break;
+      card = parent;
+      if (
+        card.querySelector("img, video") &&
+        (card.textContent || "").length > 80
+      ) {
+        break;
+      }
+    }
+    seen.add(libraryId);
+
+    const text = (card.textContent || "").replace(/\s+/g, " ").trim();
+    const active = /\bActive\b/i.test(text);
+
+    // Run date.
+    const startMatch = text.match(
+      /(?:Started running on|Ran from)\s+[A-Za-z0-9 ,–-]+?(?=\s*(?:·|Platforms|Library|$))/i
+    );
+    const startedRunning = startMatch ? startMatch[0] : null;
+
+    // Advertiser name: first anchor with visible text near the top of the card.
+    let pageName: string | null = null;
+    const anchors = Array.from(card.querySelectorAll("a"));
+    for (const a of anchors) {
+      const t = (a.textContent || "").trim();
+      if (t && t.length <= 80 && !/library id/i.test(t)) {
+        pageName = t;
+        break;
+      }
+    }
+
+    // Creative media.
+    let mediaUrl: string | null = null;
+    let mediaType: "image" | "video" | null = null;
+    const video = card.querySelector("video");
+    if (video) {
+      mediaUrl =
+        video.getAttribute("src") || video.getAttribute("poster") || null;
+      mediaType = "video";
+    }
+    if (!mediaUrl) {
+      const imgs = Array.from(card.querySelectorAll("img")).filter((img) => {
+        const src = img.getAttribute("src") || "";
+        const w = (img as HTMLImageElement).naturalWidth || img.clientWidth;
+        return /scontent|fbcdn/i.test(src) && w >= 120;
+      });
+      if (imgs.length > 0) {
+        mediaUrl = imgs[0].getAttribute("src");
+        mediaType = "image";
+      }
+    }
+
+    // Ad copy: longest text block among descendants that isn't metadata.
+    let copy: string | null = null;
+    let bestLen = 0;
+    for (const el of Array.from(card.querySelectorAll("div, span"))) {
+      if (el.children.length > 0) continue; // leaf text only
+      const t = (el.textContent || "").trim();
+      if (
+        t.length > bestLen &&
+        t.length >= 25 &&
+        !LIB_RE.test(t) &&
+        !/Started running|Platforms|Sponsored|Active|Inactive/i.test(t)
+      ) {
+        bestLen = t.length;
+        copy = t;
+      }
+    }
+
+    results.push({
+      libraryId,
+      pageName,
+      copy,
+      mediaUrl,
+      mediaType,
+      startedRunning,
+      active,
+    });
+  }
+
+  return results;
+}
+
+/** One-shot helper: scrape ads for a single term, managing the browser. */
+export async function scrapeActiveAds(searchTerms: string): Promise<NormalizedAd[]> {
+  const scraper = new MetaAdLibraryScraper();
+  await scraper.init();
+  try {
+    return await scraper.search(searchTerms);
+  } finally {
+    await scraper.close();
+  }
 }

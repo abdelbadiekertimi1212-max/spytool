@@ -63,9 +63,9 @@ export async function crawlStorefront(
 
         if (products.length >= engineConfig.maxProductsPerStore) return;
 
-        const core = extractProduct(html, $);
+        const core = extractProduct(html, $, platform);
         if (!core.title) return;
-        const { stock } = extractStock(html, $);
+        const { stock } = extractStock(html, $, platform);
 
         products.push({
           externalId: handleFromUrl(request.url),

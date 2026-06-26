@@ -6,7 +6,7 @@ import type { ScrapeResult, StoreScrapeTarget } from "./types";
 export * from "./types";
 export { createEngineClient } from "./supabase";
 export { persistScrape, persistAds } from "./persistence";
-export { fetchActiveAds } from "./meta-ads";
+export { MetaAdLibraryScraper, scrapeActiveAds } from "./meta-ads";
 export { computeWinners } from "./winner";
 
 /** Route a store to the correct platform scraper. */

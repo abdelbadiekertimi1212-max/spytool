@@ -1,6 +1,7 @@
 import type { CheerioAPI } from "cheerio";
 
 import { toNumber } from "./http";
+import type { StorePlatform } from "../../types/supabase";
 
 export interface ExtractedStock {
   stock: number | null;
@@ -8,15 +9,67 @@ export interface ExtractedStock {
 }
 
 /**
- * Best-effort stock extraction for storefronts that embed inventory in the page
- * (YouCan / Storeino). Tries, in order: explicit numeric JSON keys, quantity
- * input bounds / data-attributes, then JSON-LD availability as a boolean signal.
- *
- * Returns `stock: null` when no count is found (availability may still be set).
- * Selectors here are intentionally broad; tune them against live DOM in review.
+ * Default-theme selectors per platform. These target the stock/quantity
+ * controls and price/title markup of the stock YouCan and Storeino themes.
+ * Most Algerian stores run custom domains but keep the default theme DOM, so
+ * these are a reasonable baseline; fine-tune against real `.dz` URLs in Phase 3.
  */
-export function extractStock(html: string, $: CheerioAPI): ExtractedStock {
-  // 1. Numeric inventory keys commonly present in inline JSON / __NEXT/NUXT state.
+interface ThemeSelectors {
+  title: string[];
+  price: string[];
+  stock: { sel: string; attr: string }[];
+}
+
+const THEME: Partial<Record<StorePlatform, ThemeSelectors>> = {
+  youcan: {
+    title: ["h1.product-title", ".product__title", ".product-info h1", "h1"],
+    price: [
+      "[data-product-price]",
+      ".product-price",
+      ".price-current",
+      ".price",
+    ],
+    stock: [
+      { sel: "input[name='quantity']", attr: "max" },
+      { sel: ".product-form input[type='number']", attr: "max" },
+      { sel: "[data-inventory]", attr: "data-inventory" },
+      { sel: "[data-stock]", attr: "data-stock" },
+    ],
+  },
+  storeino: {
+    title: ["h1.product-title", ".product-name h1", ".product_title", "h1"],
+    price: ["[data-price]", ".product-price", ".current-price", ".price"],
+    stock: [
+      { sel: "input.quantity-input", attr: "max" },
+      { sel: "input[name='qty']", attr: "max" },
+      { sel: "input[name='quantity']", attr: "max" },
+      { sel: "[data-stock]", attr: "data-stock" },
+      { sel: "[data-quantity]", attr: "data-quantity" },
+    ],
+  },
+};
+
+/**
+ * Best-effort stock extraction. Tries, in order: platform theme selectors,
+ * explicit numeric JSON keys in the payload, generic quantity-input bounds, and
+ * finally JSON-LD availability as a boolean. Returns `stock: null` when no count
+ * is found (availability may still be set).
+ */
+export function extractStock(
+  html: string,
+  $: CheerioAPI,
+  platform?: StorePlatform
+): ExtractedStock {
+  // 0. Platform default-theme stock controls.
+  const theme = platform ? THEME[platform] : undefined;
+  if (theme) {
+    for (const { sel, attr } of theme.stock) {
+      const n = toNumber($(sel).first().attr(attr));
+      if (n !== null && n >= 0) return { stock: n, available: n > 0 };
+    }
+  }
+
+  // 1. Numeric inventory keys commonly present in inline JSON / SSR state.
   const numericKeys = [
     "available_quantity",
     "inventory_quantity",
@@ -31,13 +84,11 @@ export function extractStock(html: string, $: CheerioAPI): ExtractedStock {
     const m = html.match(re);
     if (m) {
       const n = Number(m[1]);
-      if (Number.isFinite(n) && n >= 0) {
-        return { stock: n, available: n > 0 };
-      }
+      if (Number.isFinite(n) && n >= 0) return { stock: n, available: n > 0 };
     }
   }
 
-  // 2. Quantity input upper bound (themes cap the selector at available stock).
+  // 2. Generic quantity input upper bound / data attributes.
   const maxAttr =
     $("input[type=number][max]").attr("max") ||
     $("[data-max-quantity]").attr("data-max-quantity") ||
@@ -49,8 +100,7 @@ export function extractStock(html: string, $: CheerioAPI): ExtractedStock {
   }
 
   // 3. JSON-LD availability (boolean signal only — no count).
-  const available = extractJsonLdAvailability($);
-  return { stock: null, available };
+  return { stock: null, available: extractJsonLdAvailability($) };
 }
 
 function extractJsonLdAvailability($: CheerioAPI): boolean | null {
@@ -85,20 +135,43 @@ export interface ExtractedProduct {
   description: string | null;
 }
 
-/** Extract core product fields from OpenGraph / JSON-LD / common meta tags. */
-export function extractProduct(html: string, $: CheerioAPI): ExtractedProduct {
+function firstText($: CheerioAPI, selectors: string[]): string | null {
+  for (const sel of selectors) {
+    const el = $(sel).first();
+    if (el.length) {
+      const text = el.attr("content") || el.text();
+      if (text && text.trim()) return text.trim();
+    }
+  }
+  return null;
+}
+
+/** Extract core product fields via platform theme selectors, then OG/JSON-LD. */
+export function extractProduct(
+  html: string,
+  $: CheerioAPI,
+  platform?: StorePlatform
+): ExtractedProduct {
+  const theme = platform ? THEME[platform] : undefined;
+
   const title =
+    (theme && firstText($, theme.title)) ||
     $('meta[property="og:title"]').attr("content") ||
     $("h1").first().text().trim() ||
     $("title").text().trim() ||
     null;
 
-  const priceMeta =
-    $('meta[property="product:price:amount"]').attr("content") ||
-    $('meta[property="og:price:amount"]').attr("content") ||
-    null;
-
-  let price = toNumber(priceMeta);
+  let price: number | null = null;
+  if (theme) {
+    const themePrice = firstText($, theme.price);
+    // Strip currency symbols / thousands separators before parsing.
+    price = toNumber(themePrice?.replace(/[^\d.,]/g, "").replace(",", "."));
+  }
+  if (price === null) {
+    price =
+      toNumber($('meta[property="product:price:amount"]').attr("content")) ??
+      toNumber($('meta[property="og:price:amount"]').attr("content"));
+  }
   if (price === null) {
     const m = html.match(/["']price["']\s*:\s*"?(\d+(?:\.\d+)?)"?/i);
     if (m) price = toNumber(m[1]);

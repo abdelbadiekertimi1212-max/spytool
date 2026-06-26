@@ -11,12 +11,18 @@ interface VelocityResult {
 }
 
 /**
- * Compute units-sold-per-day from a series of stock snapshots. Sums only the
- * positive consecutive drops (so restocks don't produce negative velocity) and
- * divides by the elapsed time across the window.
+ * Compute units-sold-per-day from a series of stock snapshots.
+ *
+ * SMART VELOCITY: only GRADUAL positive drops count as sales. A drop is treated
+ * as real sell-through when `0 < drop < maxSaleDrop`. Sudden massive drops
+ * (>= maxSaleDrop, e.g. 1000→0) are flagged as MANUAL inventory adjustments and
+ * excluded from both the sold-units total and the elapsed-time denominator, so
+ * a merchant resetting stock can't manufacture a false-positive winner.
+ * Restocks (negative drops) are likewise ignored.
  */
 export function computeVelocity(
-  snapshots: { stock: number | null; captured_at: string }[]
+  snapshots: { stock: number | null; captured_at: string }[],
+  maxSaleDrop: number = engineConfig.winner.maxSaleDropPerWindow
 ): VelocityResult {
   const known = snapshots
     .filter((s): s is { stock: number; captured_at: string } => s.stock !== null)
@@ -28,18 +34,24 @@ export function computeVelocity(
   if (known.length < 2) return { velocity: 0, soldUnits: 0 };
 
   let soldUnits = 0;
+  let countedMs = 0;
   for (let i = 1; i < known.length; i += 1) {
     const drop = known[i - 1].stock - known[i].stock;
-    if (drop > 0) soldUnits += drop;
+    const intervalMs =
+      new Date(known[i].captured_at).getTime() -
+      new Date(known[i - 1].captured_at).getTime();
+
+    // Manual adjustment / restock → skip this interval entirely.
+    if (drop <= 0 || drop >= maxSaleDrop) continue;
+
+    soldUnits += drop;
+    countedMs += intervalMs;
   }
 
-  const elapsedMs =
-    new Date(known[known.length - 1].captured_at).getTime() -
-    new Date(known[0].captured_at).getTime();
-  const elapsedDays = elapsedMs / 86_400_000;
-  if (elapsedDays <= 0) return { velocity: 0, soldUnits };
+  const countedDays = countedMs / 86_400_000;
+  if (countedDays <= 0) return { velocity: 0, soldUnits };
 
-  return { velocity: soldUnits / elapsedDays, soldUnits };
+  return { velocity: soldUnits / countedDays, soldUnits };
 }
 
 /**

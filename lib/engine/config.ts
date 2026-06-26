@@ -30,17 +30,31 @@ export const engineConfig = {
     minDailyVelocity: num("ENGINE_WINNER_MIN_VELOCITY", 3),
     /** Active Meta ads required for ad-backing confirmation. */
     minActiveAds: num("ENGINE_WINNER_MIN_ACTIVE_ADS", 1),
+    /**
+     * Smart-velocity guard. A single between-snapshot stock drop of this many
+     * units or more is treated as a MANUAL inventory adjustment (e.g. a merchant
+     * resetting 1000→0) and is NOT counted as sales. Only gradual drops below
+     * this threshold contribute to velocity, preventing false-positive winners.
+     */
+    maxSaleDropPerWindow: num("ENGINE_WINNER_MAX_SALE_DROP", 100),
   },
 
-  /** Meta Ad Library. */
+  /** Meta Ad Library (public website scraper — no official API token). */
   meta: {
-    apiVersion: process.env.META_GRAPH_API_VERSION || "v21.0",
-    reachedCountries: (process.env.META_REACHED_COUNTRIES || "DZ")
-      .split(",")
-      .map((c) => c.trim())
-      .filter(Boolean),
-    pageSize: num("META_PAGE_SIZE", 50),
-    maxPages: num("META_MAX_PAGES", 5),
+    /** Country filter for the Ad Library search (ISO-2). */
+    searchCountry: (
+      process.env.META_SEARCH_COUNTRY ||
+      (process.env.META_REACHED_COUNTRIES || "DZ").split(",")[0] ||
+      "DZ"
+    ).trim(),
+    /** Max ads to keep per store per run. */
+    maxAdsPerStore: num("META_MAX_ADS_PER_STORE", 30),
+    /** How many lazy-load scrolls to perform on the results page. */
+    maxScrolls: num("META_MAX_SCROLLS", 6),
+    /** Navigation timeout for the Ad Library page (ms). */
+    navTimeoutMs: num("META_NAV_TIMEOUT_MS", 45000),
+    /** Run the browser headless (set META_HEADLESS=false to debug locally). */
+    headless: (process.env.META_HEADLESS ?? "true") !== "false",
   },
 };
 
