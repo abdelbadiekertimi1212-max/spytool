@@ -1,0 +1,32 @@
+{
+  "Meta": {
+    "title": "WinnerRadar — COD Winning Products for Algeria",
+    "description": "Track high-velocity winning products backed by active Meta ads across Algerian Shopify, YouCan and Storeino stores — before they saturate."
+  },
+  "Nav": {
+    "features": "Features",
+    "pricing": "Pricing",
+    "login": "Log in",
+    "dashboard": "Dashboard"
+  },
+  "Common": {
+    "language": "Language",
+    "arabic": "العربية",
+    "french": "Français",
+    "english": "English"
+  },
+  "Landing": {
+    "badge": "Live winner radar for the Algerian COD market",
+    "title": "Find winning products before the market does.",
+    "subtitle": "WinnerRadar cross-references real-time inventory depletion with verified active Meta ad campaigns to surface confirmed winners — not guesses.",
+    "ctaPrimary": "Start free trial",
+    "ctaSecondary": "See how it works",
+    "feature1Title": "Inventory velocity tracking",
+    "feature1Desc": "We snapshot stock across Shopify, YouCan and Storeino and compute true daily sales velocity from depletion.",
+    "feature2Title": "Meta ad verification",
+    "feature2Desc": "Every winner is cross-checked against the official Meta Ad Library for currently active creatives and copy.",
+    "feature3Title": "B2B lead engine",
+    "feature3Desc": "AI-scored store leads with ready-to-send call and email hooks for freelancers and agencies.",
+    "winnerCriteria": "Confirmed Winner = rapid stock depletion + active Meta ads"
+  }
+}

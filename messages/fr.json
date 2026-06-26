@@ -1,0 +1,32 @@
+{
+  "Meta": {
+    "title": "WinnerRadar — Produits gagnants COD pour l'Algérie",
+    "description": "Détectez les produits gagnants à forte vélocité soutenus par des publicités Meta actives sur les boutiques algériennes Shopify, YouCan et Storeino — avant la saturation."
+  },
+  "Nav": {
+    "features": "Fonctionnalités",
+    "pricing": "Tarifs",
+    "login": "Connexion",
+    "dashboard": "Tableau de bord"
+  },
+  "Common": {
+    "language": "Langue",
+    "arabic": "العربية",
+    "french": "Français",
+    "english": "English"
+  },
+  "Landing": {
+    "badge": "Radar de produits gagnants pour le marché COD algérien",
+    "title": "Trouvez les produits gagnants avant le marché.",
+    "subtitle": "WinnerRadar croise l'épuisement des stocks en temps réel avec des campagnes publicitaires Meta actives vérifiées pour révéler de vrais gagnants — pas des suppositions.",
+    "ctaPrimary": "Démarrer l'essai gratuit",
+    "ctaSecondary": "Voir comment ça marche",
+    "feature1Title": "Suivi de la vélocité des stocks",
+    "feature1Desc": "Nous capturons les stocks sur Shopify, YouCan et Storeino et calculons la vraie vélocité de vente quotidienne à partir de l'épuisement.",
+    "feature2Title": "Vérification des publicités Meta",
+    "feature2Desc": "Chaque gagnant est recoupé avec la bibliothèque publicitaire officielle de Meta pour les créatifs et textes actuellement actifs.",
+    "feature3Title": "Moteur de leads B2B",
+    "feature3Desc": "Leads de boutiques notés par IA avec des accroches d'appel et d'e-mail prêtes à l'emploi pour freelances et agences.",
+    "winnerCriteria": "Gagnant confirmé = épuisement rapide du stock + publicités Meta actives"
+  }
+}
