@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "../lib/engine/load-env";
 
 import { createEngineClient } from "../lib/engine";
 

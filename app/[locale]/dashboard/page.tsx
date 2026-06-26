@@ -1,58 +1,36 @@
-import { setRequestLocale } from "next-intl/server";
-import { Radar } from "lucide-react";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Link } from "@/i18n/navigation";
+import { WinnerFeed } from "@/components/dashboard/winner-feed";
+import type { WinnerProduct } from "@/lib/dashboard/types";
 
-// Auth-gated: must read the live session per request, never prerender.
 export const dynamic = "force-dynamic";
 
-/**
- * Placeholder dashboard. The full Winner Product Radar + B2B CRM ships in
- * Phase 3. For now this proves the server-side Supabase auth wiring compiles
- * and runs: it reads the current user from the request session.
- */
-export default async function DashboardPage({
+export default async function WinnersPage({
   params,
 }: {
   params: { locale: string };
 }) {
-  const { locale } = params;
-  setRequestLocale(locale);
+  setRequestLocale(params.locale);
 
   const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data } = await supabase
+    .from("products")
+    .select("*, store:stores(*), ads:ads(*)")
+    .eq("is_winner", true)
+    .order("daily_velocity", { ascending: false })
+    .limit(120);
+
+  const winners = (data ?? []) as unknown as WinnerProduct[];
+  const t = await getTranslations("Dashboard");
 
   return (
-    <div className="container flex min-h-screen flex-col items-center justify-center gap-6 py-20 text-center">
-      <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-winner/10 text-winner">
-        <Radar className="h-6 w-6 animate-pulse-glow" />
+    <div className="container py-8">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight">{t("winnersTitle")}</h1>
+        <p className="text-sm text-muted-foreground">{t("winnersSubtitle")}</p>
       </div>
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Winner Product Radar</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 text-sm text-muted-foreground">
-          {user ? (
-            <p>
-              Signed in as <span className="text-foreground">{user.email}</span>.
-              The radar feed arrives in Phase 3.
-            </p>
-          ) : (
-            <p>
-              No active session. Authentication UI ships with Phase 3 — the
-              server and middleware Supabase clients are already wired.
-            </p>
-          )}
-          <Button asChild variant="outline" size="sm">
-            <Link href="/">← Back home</Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <WinnerFeed winners={winners} />
     </div>
   );
 }

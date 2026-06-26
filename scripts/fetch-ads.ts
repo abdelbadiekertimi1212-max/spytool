@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "../lib/engine/load-env";
 
 import { createEngineClient, MetaAdLibraryScraper } from "../lib/engine";
 import { persistAds } from "../lib/engine/persistence";
