@@ -62,7 +62,7 @@ export const engineConfig = {
     /** Broad Algerian-COD keywords searched when none are passed on the CLI. */
     keywords: (
       process.env.DISCOVER_KEYWORDS ||
-      "الدفع عند الاستلام,التوصيل مجاني,58 ولاية,الدفع عند الاستلام الجزائر"
+      "الدفع عند الاستلام,التوصيل مجاني,58 ولاية,الدفع عند الاستلام الجزائر,سلعة العلمة,أسواق العلمة"
     )
       .split(",")
       .map((k) => k.trim())

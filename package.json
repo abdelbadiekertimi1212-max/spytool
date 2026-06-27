@@ -13,6 +13,7 @@
     "seed:list": "tsx scripts/seed-stores-list.ts",
     "seed:winner": "tsx scripts/seed-winner-demo.ts",
     "engine:discover": "tsx scripts/discover-stores.ts",
+    "stats": "tsx scripts/stats.ts",
     "engine:inventory": "tsx scripts/scrape-inventory.ts",
     "engine:ads": "tsx scripts/fetch-ads.ts",
     "engine:winners": "tsx scripts/compute-winners.ts",
