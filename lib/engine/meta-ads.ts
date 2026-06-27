@@ -148,6 +148,50 @@ export class MetaAdLibraryScraper {
     }
   }
 
+  /**
+   * Discovery mode: run a BROAD keyword search and harvest the outbound
+   * advertiser landing URLs / caption domains from the active ad cards (rather
+   * than parsing ad creatives). Feeds the Auto-Discovery Engine.
+   */
+  async searchAdLinks(searchTerms: string): Promise<string[]> {
+    if (!this.browser) {
+      throw new Error("MetaAdLibraryScraper.init() must be called first.");
+    }
+    const term = searchTerms.trim();
+    if (!term) return [];
+
+    const { searchCountry, maxScrolls, navTimeoutMs } = engineConfig.meta;
+    const context = await this.browser.newContext({
+      userAgent: randomUserAgent(),
+      locale: "fr-FR",
+      viewport: { width: 1366, height: 900 },
+    });
+    const page = await context.newPage();
+
+    try {
+      await page.goto(buildSearchUrl(term, searchCountry), {
+        waitUntil: "domcontentloaded",
+        timeout: navTimeoutMs,
+      });
+      await this.dismissConsent(page);
+      await page
+        .waitForFunction(() => /Library ID/i.test(document.body.innerText), {
+          timeout: 15000,
+        })
+        .catch(() => undefined);
+
+      for (let i = 0; i < maxScrolls; i += 1) {
+        await page.mouse.wheel(0, 2200);
+        await sleep(1200 + Math.random() * 900);
+      }
+
+      const links = (await page.evaluate(extractAdLinks)) as string[];
+      return Array.from(new Set(links));
+    } finally {
+      await context.close();
+    }
+  }
+
   private async dismissConsent(page: import("playwright").Page): Promise<void> {
     const labels = [
       /allow all cookies/i,
@@ -284,6 +328,42 @@ function extractAdCards(): RawAdCard[] {
   }
 
   return results;
+}
+
+/**
+ * Runs inside the browser (page.evaluate). Harvests candidate advertiser URLs
+ * from the ad results: decoded `l.facebook.com/l.php?u=` outbound links, direct
+ * external anchors, and visible caption domains (e.g. "LUMINAALGERIE.COM").
+ * Meta/Facebook-owned hosts are left for the Node side to filter.
+ */
+function extractAdLinks(): string[] {
+  const out = new Set<string>();
+
+  for (const a of Array.from(document.querySelectorAll("a[href]"))) {
+    const href = a.getAttribute("href") || "";
+    if (!href) continue;
+    if (href.includes("l.facebook.com/l.php")) {
+      try {
+        const u = new URL(href, location.href).searchParams.get("u");
+        if (u) out.add(u);
+      } catch {
+        /* ignore malformed redirect */
+      }
+    } else if (/^https?:\/\//i.test(href)) {
+      out.add(href);
+    }
+  }
+
+  // Visible caption domains shown under each ad's CTA.
+  const text = document.body.innerText || "";
+  const re =
+    /\b((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:com|net|store|shop|online|site|one|dz|co|org|me))\b/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    out.add("https://" + m[1].toLowerCase());
+  }
+
+  return Array.from(out);
 }
 
 /** One-shot helper: scrape ads for a single term, managing the browser. */

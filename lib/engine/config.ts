@@ -56,6 +56,20 @@ export const engineConfig = {
     /** Run the browser headless (set META_HEADLESS=false to debug locally). */
     headless: (process.env.META_HEADLESS ?? "true") !== "false",
   },
+
+  /** Auto-discovery engine (broad Ad Library search → new store seeding). */
+  discover: {
+    /** Broad Algerian-COD keywords searched when none are passed on the CLI. */
+    keywords: (
+      process.env.DISCOVER_KEYWORDS ||
+      "الدفع عند الاستلام,التوصيل مجاني,58 ولاية,الدفع عند الاستلام الجزائر"
+    )
+      .split(",")
+      .map((k) => k.trim())
+      .filter(Boolean),
+    /** Max candidate domains to resolve+detect per keyword (politeness cap). */
+    maxCandidatesPerKeyword: num("DISCOVER_MAX_CANDIDATES", 40),
+  },
 };
 
 /** Rotating realistic desktop User-Agent strings for stealthy requests. */

@@ -37,6 +37,10 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      - name: Auto-discover new stores (broad Ad Library search)
+        run: npm run engine:discover
+        continue-on-error: true
+
       - name: Inventory snapshot
         run: npm run engine:inventory
 

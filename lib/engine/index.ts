@@ -8,6 +8,7 @@ export { createEngineClient } from "./supabase";
 export { persistScrape, persistAds } from "./persistence";
 export { MetaAdLibraryScraper, scrapeActiveAds } from "./meta-ads";
 export { computeWinners } from "./winner";
+export { discoverStores, detectPlatform } from "./discover";
 
 /** Route a store to the correct platform scraper. */
 export function scrapeStore(target: StoreScrapeTarget): Promise<ScrapeResult> {
