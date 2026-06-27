@@ -10,10 +10,12 @@ import {
   ChevronDown,
   ExternalLink,
   ImageOff,
+  Calculator,
 } from "lucide-react";
 
 import type { WinnerProduct } from "@/lib/dashboard/types";
 import { AdCreative } from "./ad-creative";
+import { MarginCalculator } from "./margin-calculator";
 import { Badge } from "@/components/ui/badge";
 import { formatDZD, formatNumber, daysSince } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -27,6 +29,7 @@ const PLATFORM_LABEL: Record<string, string> = {
 export function WinnerCard({ winner, index }: { winner: WinnerProduct; index: number }) {
   const t = useTranslations("Dashboard");
   const [showAds, setShowAds] = useState(false);
+  const [showCalc, setShowCalc] = useState(false);
 
   const activeAds = (winner.store?.ads ?? []).filter((a) => a.is_active);
   const sinceDays = daysSince(winner.winner_since);
@@ -99,10 +102,27 @@ export function WinnerCard({ winner, index }: { winner: WinnerProduct; index: nu
           </span>
         </div>
 
+        <div className="mt-auto" />
+
+        <button
+          type="button"
+          onClick={() => setShowCalc((s) => !s)}
+          className="inline-flex items-center justify-between rounded-md border border-border/60 bg-background/50 px-3 py-2 text-xs font-medium transition-colors hover:bg-accent"
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <Calculator className="h-3.5 w-3.5 text-winner" />
+            {t("profitCalc")}
+          </span>
+          <ChevronDown
+            className={cn("h-4 w-4 transition-transform", showCalc && "rotate-180")}
+          />
+        </button>
+        {showCalc ? <MarginCalculator price={winner.price} /> : null}
+
         <button
           type="button"
           onClick={() => setShowAds((s) => !s)}
-          className="mt-auto inline-flex items-center justify-between rounded-md border border-border/60 bg-background/50 px-3 py-2 text-xs font-medium transition-colors hover:bg-accent"
+          className="inline-flex items-center justify-between rounded-md border border-border/60 bg-background/50 px-3 py-2 text-xs font-medium transition-colors hover:bg-accent"
         >
           <span className="inline-flex items-center gap-1.5">
             <span className="relative flex h-2 w-2">
