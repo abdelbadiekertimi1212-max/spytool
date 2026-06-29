@@ -21,6 +21,7 @@
     "engine:inventory": "tsx scripts/scrape-inventory.ts",
     "engine:ads": "tsx scripts/fetch-ads.ts",
     "engine:classify": "tsx scripts/classify-products.ts",
+    "eval:classifier": "tsx scripts/eval-classifier.ts",
     "engine:winners": "tsx scripts/compute-winners.ts",
     "engine:all": "tsx scripts/scrape-inventory.ts && tsx scripts/fetch-ads.ts && tsx scripts/compute-winners.ts"
   },

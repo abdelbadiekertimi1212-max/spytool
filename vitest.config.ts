@@ -27,6 +27,7 @@ export default defineConfig({
         "lib/engine/winner.ts",
         "lib/engine/text.ts",
         "lib/engine/classifier.ts",
+        "lib/engine/resilience.ts",
         "lib/billing.ts",
         "lib/validation.ts",
         "lib/ratelimit.ts",

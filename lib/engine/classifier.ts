@@ -1,8 +1,25 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Groq from "groq-sdk";
+import { z } from "zod";
 
 import type { Database } from "../../types/supabase";
 import { sleep } from "./http";
+import { withRetry } from "./resilience";
+
+/** Strict schema for the model's JSON output (structured-output enforcement). */
+const ClassifyResponseSchema = z.object({
+  results: z
+    .array(z.object({ i: z.number(), niche: z.string() }))
+    .default([]),
+});
+
+function safeJson(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
 
 type Client = SupabaseClient<Database>;
 
@@ -75,30 +92,35 @@ export async function classifyBatch(
     desc: (it.description || "").slice(0, 300),
   }));
 
-  const completion = await client.groq.chat.completions.create({
-    model: client.model,
-    temperature: 0,
-    max_tokens: 1500,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: JSON.stringify(payload) },
-    ],
-  });
+  const start = Date.now();
+  const completion = await withRetry(
+    () =>
+      client.groq.chat.completions.create({
+        model: client.model,
+        temperature: 0,
+        max_tokens: 1500,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: JSON.stringify(payload) },
+        ],
+      }),
+    { retries: 2, baseDelayMs: 600, timeoutMs: 20_000 }
+  );
+
+  // Monitoring: token usage + latency (surfaces in platform logs).
+  console.log(
+    `[classify] groq tokens=${completion.usage?.total_tokens ?? "?"} ` +
+      `latency=${Date.now() - start}ms items=${items.length}`
+  );
 
   const raw = completion.choices[0]?.message?.content ?? "{}";
   const out: Niche[] = items.map(() => "Uncategorized");
-  try {
-    const parsed = JSON.parse(raw) as {
-      results?: { i?: number; niche?: string }[];
-    };
-    for (const r of parsed.results ?? []) {
-      if (typeof r.i === "number" && r.i >= 0 && r.i < out.length) {
-        out[r.i] = coerceNiche(r.niche);
-      }
+  const parsed = ClassifyResponseSchema.safeParse(safeJson(raw));
+  if (parsed.success) {
+    for (const r of parsed.data.results) {
+      if (r.i >= 0 && r.i < out.length) out[r.i] = coerceNiche(r.niche);
     }
-  } catch {
-    // malformed JSON → keep all Uncategorized
   }
   return out;
 }

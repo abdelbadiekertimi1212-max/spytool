@@ -4,6 +4,11 @@ All notable production-hardening changes. Newest first.
 
 ## [Unreleased]
 
+### Phase 5 — AI Reliability (29 Jun 2026)
+- `lib/engine/resilience.ts`: `withRetry` (exponential backoff + jitter), `withTimeout`, `CircuitBreaker`. 95% covered.
+- Groq calls (classifier + outreach) now wrapped with **retry + 20s timeout**; responses validated with **zod `safeParse`** (structured-output enforcement, no throw on drift).
+- **Token-usage + latency logging** on every Groq call. `scripts/eval-classifier.ts` (+ `npm run eval:classifier`) reports accuracy / latency / failure rate on a labeled set.
+
 ### Phase 8 — Test Expansion (29 Jun 2026)
 - Added Vitest + v8 coverage; **14 → 59 tests** across `tests/{unit,integration,e2e,mocks}`.
 - Coverage gate enforced in CI (statements/functions/lines ≥ 75%, branches ≥ 70%); achieved **85.9 / 73.8 / 94.6 / 88.6**.

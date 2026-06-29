@@ -1,6 +1,15 @@
 import "server-only";
 
 import Groq from "groq-sdk";
+import { z } from "zod";
+
+import { withRetry } from "./engine/resilience";
+
+const OutreachSchema = z.object({
+  subject: z.string().optional(),
+  body: z.string().optional(),
+  callHook: z.string().optional(),
+});
 
 export interface OutreachInput {
   storeName: string;
@@ -46,24 +55,33 @@ export async function generateOutreach(
   const groq = new Groq({ apiKey });
   const model = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
 
-  const completion = await groq.chat.completions.create({
-    model,
-    temperature: 0.7,
-    max_tokens: 700,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: JSON.stringify(input) },
-    ],
-  });
+  const start = Date.now();
+  const completion = await withRetry(
+    () =>
+      groq.chat.completions.create({
+        model,
+        temperature: 0.7,
+        max_tokens: 700,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: JSON.stringify(input) },
+        ],
+      }),
+    { retries: 2, baseDelayMs: 600, timeoutMs: 20_000 }
+  );
+  console.log(
+    `[outreach] groq tokens=${completion.usage?.total_tokens ?? "?"} latency=${Date.now() - start}ms`
+  );
 
   const raw = completion.choices[0]?.message?.content ?? "{}";
-  let parsed: Partial<OutreachOutput> = {};
+  let json: unknown;
   try {
-    parsed = JSON.parse(raw) as Partial<OutreachOutput>;
+    json = JSON.parse(raw);
   } catch {
     throw new Error("Groq returned malformed JSON.");
   }
+  const parsed = OutreachSchema.safeParse(json).data ?? {};
 
   return {
     subject: parsed.subject?.trim() || "Quick idea for your store",
