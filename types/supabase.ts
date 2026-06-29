@@ -426,6 +426,27 @@ export type Database = {
         };
         Relationships: [];
       };
+      processed_webhook_events: {
+        Row: {
+          event_id: string;
+          provider: string;
+          event_type: string | null;
+          created_at: string;
+        };
+        Insert: {
+          event_id: string;
+          provider?: string;
+          event_type?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          event_id?: string;
+          provider?: string;
+          event_type?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

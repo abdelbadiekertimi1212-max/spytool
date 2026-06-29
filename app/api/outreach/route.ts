@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { generateOutreach } from "@/lib/groq";
 import { rateLimit } from "@/lib/ratelimit";
+import { outreachSchema, parseBody } from "@/lib/validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,15 +36,9 @@ export async function POST(req: Request) {
     );
   }
 
-  let payload: { storeId?: string; locale?: string };
-  try {
-    payload = (await req.json()) as { storeId?: string; locale?: string };
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
-
-  if (!payload.storeId) {
-    return NextResponse.json({ error: "storeId is required" }, { status: 400 });
+  const payload = await parseBody(req, outreachSchema);
+  if (!payload) {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
   const { data: store, error } = await supabase

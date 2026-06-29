@@ -1,9 +1,11 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getSubscriptionState } from "@/lib/supabase/subscription";
 import { getDashboardAnalytics } from "@/lib/engine/osint";
 import { AnalyticsOverview } from "@/components/dashboard/analytics-overview";
 import { WinnerFeed } from "@/components/dashboard/winner-feed";
+import { UpsellGate } from "@/components/dashboard/upsell-gate";
 import type { WinnerProduct } from "@/lib/dashboard/types";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +18,16 @@ export default async function WinnersPage({
   setRequestLocale(params.locale);
 
   const supabase = createClient();
+
+  // Paywall: RLS hides the catalog without an active sub; show an upsell here.
+  const sub = await getSubscriptionState(supabase);
+  if (!sub.active) {
+    return (
+      <div className="container py-8">
+        <UpsellGate />
+      </div>
+    );
+  }
   // Run the market-intelligence aggregation and the winner feed query in
   // parallel. Each product carries its store + ads so cards render real ads.
   const [{ data }, analytics] = await Promise.all([

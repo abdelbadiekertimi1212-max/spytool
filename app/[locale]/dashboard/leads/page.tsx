@@ -1,7 +1,9 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getSubscriptionState } from "@/lib/supabase/subscription";
 import { LeadsTable } from "@/components/dashboard/leads-table";
+import { UpsellGate } from "@/components/dashboard/upsell-gate";
 import type { LeadRow } from "@/lib/dashboard/types";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +16,15 @@ export default async function LeadsPage({
   setRequestLocale(params.locale);
 
   const supabase = createClient();
+
+  const sub = await getSubscriptionState(supabase);
+  if (!sub.active) {
+    return (
+      <div className="container py-8">
+        <UpsellGate />
+      </div>
+    );
+  }
 
   const [storesRes, winnersRes, adsRes] = await Promise.all([
     supabase

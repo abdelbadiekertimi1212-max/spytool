@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { sendOutreachEmail } from "@/lib/resend";
 import { rateLimit } from "@/lib/ratelimit";
+import { outreachSendSchema, parseBody } from "@/lib/validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,16 +35,10 @@ export async function POST(req: Request) {
     );
   }
 
-  let payload: { to?: string; subject?: string; text?: string };
-  try {
-    payload = (await req.json()) as { to?: string; subject?: string; text?: string };
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
-
-  if (!payload.to || !payload.subject || !payload.text) {
+  const payload = await parseBody(req, outreachSendSchema);
+  if (!payload) {
     return NextResponse.json(
-      { error: "to, subject and text are required" },
+      { error: "Invalid request body (valid email, subject and text required)" },
       { status: 400 }
     );
   }

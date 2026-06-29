@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { createCheckout } from "@/lib/chargily";
-import { isPaidTier, tierPrice } from "@/lib/billing";
+import { tierPrice } from "@/lib/billing";
 import { rateLimit } from "@/lib/ratelimit";
+import { checkoutSchema, parseBody } from "@/lib/validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,17 +32,12 @@ export async function POST(req: Request) {
     );
   }
 
-  let payload: { tier?: string; locale?: string };
-  try {
-    payload = (await req.json()) as { tier?: string; locale?: string };
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  const payload = await parseBody(req, checkoutSchema);
+  if (!payload) {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
   const tier = payload.tier;
-  if (!tier || !isPaidTier(tier)) {
-    return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
-  }
   const amount = tierPrice(tier);
   if (!amount) {
     return NextResponse.json({ error: "No price for tier" }, { status: 400 });

@@ -32,13 +32,34 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  if (!event.id || !event.type) {
+    return NextResponse.json({ error: "Malformed event" }, { status: 400 });
+  }
+
+  const admin = createAdminClient();
+
+  // Idempotency / replay protection: record the event id once. If it already
+  // exists, this is a duplicate (or replayed) delivery — ack without re-applying.
+  const { data: recorded, error: dedupeErr } = await admin
+    .from("processed_webhook_events")
+    .upsert(
+      { event_id: event.id, provider: "chargily", event_type: event.type },
+      { onConflict: "event_id", ignoreDuplicates: true }
+    )
+    .select("event_id");
+  if (dedupeErr) {
+    return NextResponse.json({ error: dedupeErr.message }, { status: 500 });
+  }
+  if (!recorded || recorded.length === 0) {
+    return NextResponse.json({ received: true, duplicate: true });
+  }
+
   if (event.type === "checkout.paid") {
     const meta = readMetadata(event.data);
     const userId = typeof meta.user_id === "string" ? meta.user_id : null;
     const tier = typeof meta.tier === "string" ? meta.tier : null;
 
     if (userId && tier && isPaidTier(tier)) {
-      const admin = createAdminClient();
       const now = new Date();
       const periodEnd = new Date(now.getTime() + 30 * 86_400_000);
       const { error } = await admin
