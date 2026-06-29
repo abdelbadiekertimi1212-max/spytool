@@ -28,6 +28,7 @@ export default defineConfig({
         "lib/engine/text.ts",
         "lib/engine/classifier.ts",
         "lib/engine/resilience.ts",
+        "lib/engine/proxy.ts",
         "lib/billing.ts",
         "lib/validation.ts",
         "lib/ratelimit.ts",

@@ -63,6 +63,20 @@ export const engineConfig = {
     headless: (process.env.META_HEADLESS ?? "true") !== "false",
   },
 
+  /**
+   * Scraping resilience (Phase 4 — INFRASTRUCTURE, disabled by default).
+   * No paid proxy provider is bundled; PROXY_URLS is operator-supplied.
+   */
+  scraping: {
+    enableProxy: (process.env.ENABLE_PROXY ?? "false") === "true",
+    proxyUrls: (process.env.PROXY_URLS || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+    browserPoolSize: num("SCRAPER_BROWSER_POOL", 1),
+    maxSessionUses: num("SCRAPER_MAX_SESSION_USES", 25),
+  },
+
   /** Auto-discovery engine (broad Ad Library search → new store seeding). */
   discover: {
     /** Broad Algerian-COD keywords searched when none are passed on the CLI. */
