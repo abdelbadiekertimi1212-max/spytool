@@ -4,6 +4,11 @@ All notable production-hardening changes. Newest first.
 
 ## [Unreleased]
 
+### Phase 7 — Observability + Phase 4 — Scraping Resilience (29 Jun 2026)
+- **`GET /api/health`** (Supabase + rate-limiter checks, 200/503) and **`/dashboard/health`** ops page (KPIs, 24h error count, last scrape, recent `engine_logs`).
+- Structured JSON logger + request ids (`lib/observability.ts`). `docs/OPERATIONS.md` + `docs/INCIDENTS.md` runbooks.
+- Scraping resilience **infrastructure (disabled by default, `ENABLE_PROXY=false`)**: `ProxyProvider` (round-robin), `BrowserPool`, `SessionPool` (fingerprint + session rotation), `detectCaptcha()`. No paid proxies bundled.
+
 ### Phase 5 — AI Reliability (29 Jun 2026)
 - `lib/engine/resilience.ts`: `withRetry` (exponential backoff + jitter), `withTimeout`, `CircuitBreaker`. 95% covered.
 - Groq calls (classifier + outreach) now wrapped with **retry + 20s timeout**; responses validated with **zod `safeParse`** (structured-output enforcement, no throw on drift).
