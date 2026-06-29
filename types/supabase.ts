@@ -449,7 +449,12 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      apply_winner_metrics: {
+        Args: { updates: Json };
+        Returns: number;
+      };
+    };
     Enums: {
       subscription_status: SubscriptionStatus;
       package_tier: PackageTier;

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type { Database } from "../../types/supabase";
+import type { Database, Json } from "../../types/supabase";
 import { engineConfig } from "./config";
 import { normalizeTitle } from "./text";
 
@@ -150,7 +150,9 @@ export async function computeWinners(client: Client): Promise<{
   let processed = 0;
   let winners = 0;
   const consensusWinnersByStore = new Map<string, number>();
-  const pageSize = 500;
+  // Keep batches small enough that the `.in('product_id', ids)` snapshot query
+  // URL stays well under server URL-length limits (~100 UUIDs ≈ 3.7 KB).
+  const pageSize = 100;
 
   for (let from = 0; ; from += pageSize) {
     const { data: products, error } = await client
@@ -159,6 +161,8 @@ export async function computeWinners(client: Client): Promise<{
       .range(from, from + pageSize - 1);
     if (error) throw new Error(`Failed to load products: ${error.message}`);
     if (!products || products.length === 0) break;
+
+    const metricUpdates: Record<string, unknown>[] = [];
 
     // BULK-FETCH snapshots for the entire batch in paged queries (fixes the
     // N+1: previously one snapshot query per product). Group by product in JS.
@@ -213,18 +217,25 @@ export async function computeWinners(client: Client): Promise<{
         ? product.winner_since ?? new Date().toISOString()
         : null;
 
-      const { error: updErr } = await client
-        .from("products")
-        .update({
-          daily_velocity: Number(velocity.toFixed(2)),
-          total_sold: soldUnits,
-          is_winner: isWinner,
-          winner_since: winnerSince,
-        })
-        .eq("id", product.id);
-      if (updErr) throw new Error(`Failed to update product: ${updErr.message}`);
+      metricUpdates.push({
+        id: product.id,
+        daily_velocity: Number(velocity.toFixed(2)),
+        total_sold: soldUnits,
+        is_winner: isWinner,
+        winner_since: winnerSince,
+      });
 
       processed += 1;
+    }
+
+    // ONE set-based UPDATE for the whole batch instead of N round-trips.
+    if (metricUpdates.length > 0) {
+      const { error: rpcErr } = await client.rpc("apply_winner_metrics", {
+        updates: metricUpdates as unknown as Json,
+      });
+      if (rpcErr) {
+        throw new Error(`Failed to apply winner metrics: ${rpcErr.message}`);
+      }
     }
 
     if (products.length < pageSize) break;
