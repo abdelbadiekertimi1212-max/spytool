@@ -9,9 +9,9 @@ import { createEngineClient, computeWinners } from "../lib/engine";
  */
 async function main() {
   const client = createEngineClient();
-  const { processed, winners } = await computeWinners(client);
+  const { processed, winners, leadBoosts } = await computeWinners(client);
   console.log(
-    `[winners] processed ${processed} products → ${winners} confirmed winners.`
+    `[winners] processed ${processed} products → ${winners} confirmed winners, ${leadBoosts} lead-score boosts.`
   );
 }
 

@@ -2,21 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database, StorePlatform } from "../../types/supabase";
 import { computeVelocity } from "./winner";
+import { normalizeTitle } from "./text";
 
 type Client = SupabaseClient<Database>;
 
-/**
- * Normalize a product title for fuzzy duplicate-grouping across stores.
- * Lowercases, strips ASCII + Arabic punctuation, collapses whitespace. Keeps
- * Arabic/Latin letters and digits intact (no \w, which would drop Arabic).
- */
-export function normalizeTitle(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[!-/:-@[-`{-~،؛؟“”"'…–—]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+export { normalizeTitle };
 
 export interface PlatformShare {
   platform: StorePlatform | string;

@@ -28,6 +28,18 @@ async function main() {
     counts[s.platform] = (counts[s.platform] ?? 0) + 1;
   console.log("stores by platform:", JSON.stringify(counts));
 
+  const { data: nicheRows } = await c.from("products").select("niche");
+  const nicheCounts: Record<string, number> = {};
+  for (const r of nicheRows ?? []) {
+    const key = r.niche ?? "(untagged)";
+    nicheCounts[key] = (nicheCounts[key] ?? 0) + 1;
+  }
+  const topNiches = Object.entries(nicheCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 12);
+  console.log("niches:");
+  for (const [n, c2] of topNiches) console.log(`  • ${n}: ${c2}`);
+
   const { data: sample } = await c
     .from("products")
     .select("title, price, currency")

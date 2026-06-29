@@ -23,22 +23,33 @@ export function WinnerFeed({ winners }: { winners: WinnerProduct[] }) {
 
   const [search, setSearch] = useState("");
   const [platform, setPlatform] = useState("all");
+  const [niche, setNiche] = useState("all");
   const [minVelocity, setMinVelocity] = useState(0);
   const [minAds, setMinAds] = useState(0);
   const [sinceDays, setSinceDays] = useState(0); // 0 = all-time
   const [sort, setSort] = useState<SortKey>("velocity");
+
+  // Unique niches present in the feed, for the niche dropdown.
+  const niches = useMemo(
+    () =>
+      Array.from(
+        new Set(winners.map((w) => w.niche).filter((n): n is string => Boolean(n)))
+      ).sort(),
+    [winners]
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const list = winners.filter((w) => {
       if (
         q &&
-        !`${w.title} ${w.store?.name ?? ""} ${w.store?.url ?? ""}`
+        !`${w.title} ${w.niche ?? ""} ${w.store?.name ?? ""} ${w.store?.url ?? ""}`
           .toLowerCase()
           .includes(q)
       ) {
         return false;
       }
+      if (niche !== "all" && w.niche !== niche) return false;
       if (platform !== "all" && w.store?.platform !== platform) return false;
       if (w.daily_velocity < minVelocity) return false;
       if (activeAdCount(w) < minAds) return false;
@@ -64,7 +75,7 @@ export function WinnerFeed({ winners }: { winners: WinnerProduct[] }) {
           return b.daily_velocity - a.daily_velocity;
       }
     });
-  }, [winners, search, platform, minVelocity, minAds, sinceDays, sort]);
+  }, [winners, search, platform, niche, minVelocity, minAds, sinceDays, sort]);
 
   return (
     <div className="space-y-5">
@@ -89,6 +100,20 @@ export function WinnerFeed({ winners }: { winners: WinnerProduct[] }) {
           <option value="shopify">Shopify</option>
           <option value="youcan">YouCan</option>
           <option value="storeino">Storeino</option>
+        </select>
+
+        <select
+          className={selectClass}
+          value={niche}
+          onChange={(e) => setNiche(e.target.value)}
+          aria-label={t("filterNiche")}
+        >
+          <option value="all">{t("allNiches")}</option>
+          {niches.map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
         </select>
 
         <select

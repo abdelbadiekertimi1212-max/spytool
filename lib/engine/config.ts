@@ -30,6 +30,12 @@ export const engineConfig = {
     minDailyVelocity: num("ENGINE_WINNER_MIN_VELOCITY", 3),
     /** Active Meta ads required for ad-backing confirmation. */
     minActiveAds: num("ENGINE_WINNER_MIN_ACTIVE_ADS", 1),
+    /** Ad-spend commitment: oldest active ad must be running longer than this. */
+    minAdAgeDays: num("ENGINE_WINNER_MIN_AD_AGE_DAYS", 3),
+    /** Ad-spend commitment: store must run at least this many distinct creatives. */
+    minDistinctCreatives: num("ENGINE_WINNER_MIN_CREATIVES", 2),
+    /** lead_score boost (points) for a product scaled by multiple stores. */
+    consensusBoost: num("ENGINE_WINNER_CONSENSUS_BOOST", 25),
     /**
      * Smart-velocity guard. A single between-snapshot stock drop of this many
      * units or more is treated as a MANUAL inventory adjustment (e.g. a merchant

@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../../types/supabase";
 import type { NormalizedAd, ScrapeResult } from "./types";
 import { sanitizeText } from "./http";
+import { tagProductsByNiche } from "./classifier";
 
 type Client = SupabaseClient<Database>;
 type ProductInsert = Database["public"]["Tables"]["products"]["Insert"];
@@ -43,7 +44,7 @@ export async function persistScrape(
   const { data: upserted, error } = await client
     .from("products")
     .upsert(productRows, { onConflict: "store_id,external_id" })
-    .select("id, external_id, initial_stock");
+    .select("id, external_id, initial_stock, niche");
 
   if (error) {
     throw new Error(`Failed to upsert products: ${error.message}`);
@@ -85,6 +86,20 @@ export async function persistScrape(
     }
   }
 
+  // AI niche auto-tagging for brand-new products (those still without a niche).
+  // Non-fatal: scraping must never fail because the LLM is unavailable.
+  try {
+    const untagged: { id: string; title: string; description?: string | null }[] = [];
+    for (const row of upserted ?? []) {
+      if (row.niche) continue;
+      const src = result.products.find((p) => p.externalId === row.external_id);
+      if (src) untagged.push({ id: row.id, title: src.title, description: src.description });
+    }
+    if (untagged.length > 0) await tagProductsByNiche(client, untagged);
+  } catch (err) {
+    console.error(`[persist] niche tagging skipped: ${(err as Error).message}`);
+  }
+
   await touchStoreScraped(client, storeId);
   return { upserted: productRows.length, snapshots: snapshotRows.length };
 }
@@ -94,6 +109,45 @@ async function touchStoreScraped(client: Client, storeId: string) {
     .from("stores")
     .update({ last_scraped_at: new Date().toISOString() })
     .eq("id", storeId);
+}
+
+/** Exact placeholder titles (case-insensitive) that indicate junk/test data. */
+const PLACEHOLDER_TITLES = [
+  "test",
+  "test product",
+  "produit test",
+  "test produit",
+  "sample product",
+  "منتج تجريبي",
+  "تجربة",
+];
+
+/**
+ * ZERO FAKE DATA: hard-delete junk products — exact placeholder titles or a
+ * zero price. Returns the number removed. Safe to run after every inventory
+ * pass; it never touches products with a real title and a positive/null price.
+ */
+export async function purgePlaceholders(client: Client): Promise<number> {
+  let removed = 0;
+
+  const titleFilter = PLACEHOLDER_TITLES.map((tName) => `title.ilike.${tName}`).join(
+    ","
+  );
+  const { data: byTitle } = await client
+    .from("products")
+    .delete()
+    .or(titleFilter)
+    .select("id");
+  removed += byTitle?.length ?? 0;
+
+  const { data: byPrice } = await client
+    .from("products")
+    .delete()
+    .eq("price", 0)
+    .select("id");
+  removed += byPrice?.length ?? 0;
+
+  return removed;
 }
 
 /**

@@ -11,6 +11,7 @@ import {
   ExternalLink,
   ImageOff,
   Calculator,
+  Tag,
 } from "lucide-react";
 
 import type { WinnerProduct } from "@/lib/dashboard/types";
@@ -90,6 +91,13 @@ export function WinnerCard({ winner, index }: { winner: WinnerProduct; index: nu
         <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold" title={winner.title}>
           {winner.title}
         </h3>
+
+        {winner.niche ? (
+          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[10px] text-muted-foreground">
+            <Tag className="h-3 w-3" />
+            {winner.niche}
+          </span>
+        ) : null}
 
         <div className="flex items-end justify-between">
           <span className="text-base font-bold">{formatDZD(winner.price)}</span>

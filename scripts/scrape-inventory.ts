@@ -1,7 +1,7 @@
 import "../lib/engine/load-env";
 
 import { createEngineClient, scrapeStore } from "../lib/engine";
-import { persistScrape } from "../lib/engine/persistence";
+import { persistScrape, purgePlaceholders } from "../lib/engine/persistence";
 import { jitter } from "../lib/engine/http";
 
 /**
@@ -54,8 +54,11 @@ async function main() {
     await jitter();
   }
 
+  // Zero-fake-data cleanup: drop placeholder/zero-price junk products.
+  const purged = await purgePlaceholders(client);
+
   console.log(
-    `[inventory] done. ${totalProducts} products, ${totalSnapshots} snapshots across ${stores.length} stores.`
+    `[inventory] done. ${totalProducts} products, ${totalSnapshots} snapshots across ${stores.length} stores. Purged ${purged} placeholder products.`
   );
 }
 

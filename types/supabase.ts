@@ -184,6 +184,7 @@ export type Database = {
           handle: string | null;
           title: string;
           description: string | null;
+          niche: string | null;
           price: number | null;
           compare_at_price: number | null;
           currency: string;
@@ -207,6 +208,7 @@ export type Database = {
           handle?: string | null;
           title: string;
           description?: string | null;
+          niche?: string | null;
           price?: number | null;
           compare_at_price?: number | null;
           currency?: string;
@@ -230,6 +232,7 @@ export type Database = {
           handle?: string | null;
           title?: string;
           description?: string | null;
+          niche?: string | null;
           price?: number | null;
           compare_at_price?: number | null;
           currency?: string;
