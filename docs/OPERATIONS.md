@@ -36,5 +36,12 @@ Order: `discover → inventory(+niche tag) → classify → ads → winners`.
 ## CI
 - `.github/workflows/ci.yml`: parallel `quality` (typecheck/lint/build) + `test` (vitest + coverage gate). PRs must be green. Coverage gate: stmts/fns/lines ≥ 75%, branches ≥ 70%.
 
+## End-to-end tests (Phase A)
+- Run: `npm run test:e2e` (Playwright). `globalSetup` calls `reset-test-env` to provision deterministic fixtures; `globalTeardown` removes them (set `E2E_KEEP_DATA=true` to keep for debugging).
+- Manually reset/clean fixtures: `tsx scripts/reset-test-env.ts` / `tsx scripts/reset-test-env.ts --teardown`.
+- Needs a dev server (auto-started unless `E2E_BASE_URL` is set), Supabase reachable, and `SUPABASE_SERVICE_ROLE_KEY`.
+- CI: gated/nightly `e2e.yml` (manual `workflow_dispatch` + 03:00 UTC). It is **not** a PR blocker — the PR gate is the unit/integration coverage job.
+- Fixtures are isolated (`@e2e.test` emails, `E2E —` names) so they never collide with real data.
+
 ## Verify before shipping
 `npm run typecheck && npm run lint && npm test && npm run build`

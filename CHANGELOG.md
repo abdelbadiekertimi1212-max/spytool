@@ -4,6 +4,11 @@ All notable production-hardening changes. Newest first.
 
 ## [Unreleased]
 
+### Phase A — Real E2E Environment (29 Jun 2026)
+- `supabase/seed-test.sql` + `scripts/reset-test-env.ts`: deterministic, isolated, re-runnable fixtures — active subscriber / expired / admin users (Auth admin API) + seeded stores/products/ads/snapshots (markers: `@e2e.test`, `E2E —`, fixed UUIDs).
+- Playwright: `globalSetup`/`globalTeardown` (reset/teardown), `auth.setup.ts` storage-state project, scenario specs — auth, dashboard, paywall, checkout, outreach, logout (bookmark `fixme` until Phase 6 UI).
+- `npm run test:e2e`; gated nightly/manual `e2e.yml` workflow (not a PR blocker). `.auth/` + reports gitignored. Unit/integration coverage unchanged (73 tests, 84%/74%).
+
 ### Phase 7 — Observability + Phase 4 — Scraping Resilience (29 Jun 2026)
 - **`GET /api/health`** (Supabase + rate-limiter checks, 200/503) and **`/dashboard/health`** ops page (KPIs, 24h error count, last scrape, recent `engine_logs`).
 - Structured JSON logger + request ids (`lib/observability.ts`). `docs/OPERATIONS.md` + `docs/INCIDENTS.md` runbooks.
