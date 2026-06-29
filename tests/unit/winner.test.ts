@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { computeVelocity } from "../lib/engine/winner";
+import { computeVelocity } from "@/lib/engine/winner";
 
 /** Build a snapshot N days before a fixed epoch. */
 const BASE = Date.parse("2026-06-20T00:00:00Z");

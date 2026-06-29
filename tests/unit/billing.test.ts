@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { tierPrice, isPaidTier, PAID_TIERS } from "../lib/billing";
+import { tierPrice, isPaidTier, PAID_TIERS } from "@/lib/billing";
 
 describe("billing tiers", () => {
   it("prices the paid tiers in DZD", () => {

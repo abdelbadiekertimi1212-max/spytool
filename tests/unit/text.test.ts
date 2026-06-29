@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { normalizeTitle } from "../lib/engine/text";
+import { normalizeTitle } from "@/lib/engine/text";
 
 describe("normalizeTitle", () => {
   it("lowercases and strips ASCII punctuation", () => {
