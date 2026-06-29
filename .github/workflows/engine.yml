@@ -28,7 +28,10 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Node 24 ships npm 11 — the same major that generated
+          # package-lock.json, so `npm ci` resolves transitive deps
+          # identically (avoids the EUSAGE / "Missing from lock file" error).
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
