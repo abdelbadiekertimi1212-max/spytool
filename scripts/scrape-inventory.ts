@@ -3,6 +3,7 @@ import "../lib/engine/load-env";
 import { createEngineClient, scrapeStore } from "../lib/engine";
 import { persistScrape, purgePlaceholders } from "../lib/engine/persistence";
 import { jitter } from "../lib/engine/http";
+import { logEngine } from "../lib/engine/logger";
 
 /**
  * Inventory pass: for every active store, run the platform scraper, upsert
@@ -47,8 +48,12 @@ async function main() {
         `[inventory] ${store.url} → ${upserted} products, ${snapshots} snapshots`
       );
     } catch (err) {
-      console.error(
-        `[inventory] failed ${store.url}: ${(err as Error).message}`
+      await logEngine(
+        client,
+        "error",
+        "inventory",
+        `failed ${store.url}: ${(err as Error).message}`,
+        { url: store.url, platform: store.platform }
       );
     }
     await jitter();

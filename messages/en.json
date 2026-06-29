@@ -39,7 +39,12 @@
     "signUp": "Sign up",
     "toSignUp": "No account? Create one",
     "toSignIn": "Already have an account? Sign in",
-    "checkEmail": "Check your email to confirm your account, then sign in."
+    "checkEmail": "Check your email to confirm your account, then sign in.",
+    "agreePrefix": "I agree to the",
+    "termsLink": "Terms of Service",
+    "agreeAnd": "and",
+    "privacyLink": "Privacy Policy",
+    "mustAgree": "You must accept the Terms of Service to continue."
   },
   "Dashboard": {
     "navWinners": "Winners",

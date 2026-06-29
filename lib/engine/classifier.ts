@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import Groq from "groq-sdk";
 
 import type { Database } from "../../types/supabase";
+import { sleep } from "./http";
 
 type Client = SupabaseClient<Database>;
 
@@ -152,4 +153,32 @@ export async function classifyUntagged(
     .limit(max);
   if (error) throw new Error(`Failed to load untagged products: ${error.message}`);
   return tagProductsByNiche(client, data ?? []);
+}
+
+/**
+ * Drain the ENTIRE untagged queue, looping in safe chunks with a delay between
+ * each to respect Groq rate limits. Stops when no progress is made (queue empty
+ * or Groq unavailable). `onProgress` reports the running total after each chunk.
+ */
+export async function classifyAll(
+  client: Client,
+  opts: {
+    chunkSize?: number;
+    delayMs?: number;
+    onProgress?: (total: number) => void;
+  } = {}
+): Promise<number> {
+  const chunkSize = opts.chunkSize ?? 50;
+  const delayMs = opts.delayMs ?? 1500;
+  let total = 0;
+
+  // Safety bound: never loop more than this many chunks in a single run.
+  for (let iter = 0; iter < 2000; iter += 1) {
+    const tagged = await classifyUntagged(client, chunkSize);
+    if (tagged === 0) break; // queue drained (or Groq not configured)
+    total += tagged;
+    opts.onProgress?.(total);
+    await sleep(delayMs);
+  }
+  return total;
 }

@@ -4,6 +4,7 @@ import type { Database, StorePlatform } from "../../types/supabase";
 import { engineConfig } from "./config";
 import { fetchWithTimeout, jitter, originOf, sanitizeText } from "./http";
 import { MetaAdLibraryScraper } from "./meta-ads";
+import { logEngine } from "./logger";
 
 type Client = SupabaseClient<Database>;
 
@@ -219,7 +220,13 @@ export async function discoverStores(
       try {
         links = await scraper.searchAdLinks(kw);
       } catch (err) {
-        console.error(`[discover] search failed "${kw}": ${(err as Error).message}`);
+        await logEngine(
+          client,
+          "error",
+          "discover",
+          `search failed "${kw}": ${(err as Error).message}`,
+          { keyword: kw }
+        );
       }
       let kept = 0;
       for (const link of links) {
@@ -266,7 +273,9 @@ export async function discoverStores(
       { onConflict: "url" }
     );
     if (error) {
-      console.error(`[discover] insert ${det.host}: ${error.message}`);
+      await logEngine(client, "error", "discover", `insert ${det.host}: ${error.message}`, {
+        host: det.host,
+      });
       continue;
     }
     existing.add(det.host);

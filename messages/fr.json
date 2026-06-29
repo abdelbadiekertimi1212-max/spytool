@@ -39,7 +39,12 @@
     "signUp": "S'inscrire",
     "toSignUp": "Pas de compte ? Créez-en un",
     "toSignIn": "Déjà un compte ? Connectez-vous",
-    "checkEmail": "Vérifiez votre e-mail pour confirmer votre compte, puis connectez-vous."
+    "checkEmail": "Vérifiez votre e-mail pour confirmer votre compte, puis connectez-vous.",
+    "agreePrefix": "J'accepte les",
+    "termsLink": "Conditions d'utilisation",
+    "agreeAnd": "et la",
+    "privacyLink": "Politique de confidentialité",
+    "mustAgree": "Vous devez accepter les Conditions d'utilisation pour continuer."
   },
   "Dashboard": {
     "navWinners": "Gagnants",

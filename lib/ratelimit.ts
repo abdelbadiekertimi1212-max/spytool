@@ -47,9 +47,33 @@ export interface RateResult {
   remaining: number;
 }
 
+const WINDOW_MS = 60_000;
+
+// In-memory fallback so rate limiting STILL BLOCKS when Upstash is not
+// configured (defense in depth). Per-process only — for multi-instance
+// production, configure Upstash so the window is shared across instances.
+const memHits = new Map<string, number[]>();
+
+function memoryLimit(identifier: string, limit: number): RateResult {
+  const now = Date.now();
+  // Light prune to bound memory.
+  if (memHits.size > 10_000) memHits.clear();
+  const recent = (memHits.get(identifier) ?? []).filter(
+    (ts) => now - ts < WINDOW_MS
+  );
+  if (recent.length >= limit) {
+    memHits.set(identifier, recent);
+    return { success: false, limit, remaining: 0 };
+  }
+  recent.push(now);
+  memHits.set(identifier, recent);
+  return { success: true, limit, remaining: Math.max(0, limit - recent.length) };
+}
+
 /**
  * Sliding-window rate limit keyed by `identifier`, with the window size chosen
- * by the user's subscription tier. No-ops (allows) when Upstash isn't configured.
+ * by the user's subscription tier. Uses Upstash Redis when configured; otherwise
+ * falls back to an in-memory window that still blocks abusers.
  */
 export async function rateLimit(
   identifier: string,
@@ -57,7 +81,7 @@ export async function rateLimit(
 ): Promise<RateResult> {
   const limit = TIER_LIMITS[tier] ?? TIER_LIMITS.free;
   const limiter = limiterFor(limit);
-  if (!limiter) return { success: true, limit, remaining: limit };
+  if (!limiter) return memoryLimit(identifier, limit);
   const res = await limiter.limit(identifier);
   return { success: res.success, limit: res.limit, remaining: res.remaining };
 }

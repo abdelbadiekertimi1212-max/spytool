@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Loader2, Radar } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "@/i18n/navigation";
+import { useRouter, Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,9 +30,14 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [agreed, setAgreed] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!agreed) {
+      setError(t("mustAgree"));
+      return;
+    }
     setLoading(true);
     setError(null);
     setNotice(null);
@@ -104,7 +109,41 @@ export function LoginForm() {
               <p className="text-sm text-winner">{notice}</p>
             ) : null}
 
-            <Button type="submit" variant="winner" className="w-full" disabled={loading}>
+            <label className="flex items-start gap-2 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="mt-0.5 accent-[hsl(var(--winner))]"
+                required
+              />
+              <span>
+                {t("agreePrefix")}{" "}
+                <Link
+                  href="/legal/terms"
+                  target="_blank"
+                  className="text-winner hover:underline"
+                >
+                  {t("termsLink")}
+                </Link>{" "}
+                {t("agreeAnd")}{" "}
+                <Link
+                  href="/legal/privacy"
+                  target="_blank"
+                  className="text-winner hover:underline"
+                >
+                  {t("privacyLink")}
+                </Link>
+                .
+              </span>
+            </label>
+
+            <Button
+              type="submit"
+              variant="winner"
+              className="w-full"
+              disabled={loading || !agreed}
+            >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {mode === "signin" ? t("signIn") : t("signUp")}
             </Button>

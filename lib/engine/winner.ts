@@ -160,16 +160,39 @@ export async function computeWinners(client: Client): Promise<{
     if (error) throw new Error(`Failed to load products: ${error.message}`);
     if (!products || products.length === 0) break;
 
-    for (const product of products) {
+    // BULK-FETCH snapshots for the entire batch in paged queries (fixes the
+    // N+1: previously one snapshot query per product). Group by product in JS.
+    const productIds = products.map((p) => p.id);
+    const snapsByProduct = new Map<
+      string,
+      { stock: number | null; captured_at: string }[]
+    >();
+    const snapPage = 1000;
+    for (let s = 0; ; s += snapPage) {
       const { data: snaps, error: snapErr } = await client
         .from("product_snapshots")
-        .select("stock, captured_at")
-        .eq("product_id", product.id)
+        .select("product_id, stock, captured_at")
+        .in("product_id", productIds)
         .gte("captured_at", cutoff)
-        .order("captured_at", { ascending: true });
+        .order("captured_at", { ascending: true })
+        .range(s, s + snapPage - 1);
       if (snapErr) throw new Error(`Failed to load snapshots: ${snapErr.message}`);
+      if (!snaps || snaps.length === 0) break;
+      for (const row of snaps) {
+        let arr = snapsByProduct.get(row.product_id);
+        if (!arr) {
+          arr = [];
+          snapsByProduct.set(row.product_id, arr);
+        }
+        arr.push({ stock: row.stock, captured_at: row.captured_at });
+      }
+      if (snaps.length < snapPage) break;
+    }
 
-      const { velocity, soldUnits } = computeVelocity(snaps ?? []);
+    for (const product of products) {
+      const { velocity, soldUnits } = computeVelocity(
+        snapsByProduct.get(product.id) ?? []
+      );
 
       const velocityOK = velocity >= minDailyVelocity;
       const adOK = adCommitmentOK(product.store_id);

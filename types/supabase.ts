@@ -365,6 +365,67 @@ export type Database = {
           },
         ];
       };
+      bookmarks: {
+        Row: {
+          id: string;
+          user_id: string;
+          product_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          product_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          product_id?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "bookmarks_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bookmarks_product_id_fkey";
+            columns: ["product_id"];
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      engine_logs: {
+        Row: {
+          id: number;
+          level: string;
+          scope: string;
+          message: string;
+          context: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          level?: string;
+          scope: string;
+          message: string;
+          context?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: number;
+          level?: string;
+          scope?: string;
+          message?: string;
+          context?: Json | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

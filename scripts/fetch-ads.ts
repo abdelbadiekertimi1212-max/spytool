@@ -3,6 +3,7 @@ import "../lib/engine/load-env";
 import { createEngineClient, MetaAdLibraryScraper } from "../lib/engine";
 import { persistAds } from "../lib/engine/persistence";
 import { jitter } from "../lib/engine/http";
+import { logEngine } from "../lib/engine/logger";
 
 /** Best search term for a store: its FB page name, else a name derived from the domain. */
 function deriveStoreName(url: string, fallback: string | null): string {
@@ -48,7 +49,13 @@ async function main() {
         totalAds += count;
         console.log(`[ads] ${store.url} (q="${term}") → ${count} active ads`);
       } catch (err) {
-        console.error(`[ads] failed ${store.url}: ${(err as Error).message}`);
+        await logEngine(
+          client,
+          "error",
+          "ads",
+          `failed ${store.url}: ${(err as Error).message}`,
+          { url: store.url }
+        );
       }
       await jitter();
     }

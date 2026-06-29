@@ -43,6 +43,14 @@ jobs:
 
       - name: Inventory snapshot
         run: npm run engine:inventory
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+
+      - name: AI niche tagging (drain untagged queue)
+        run: npm run engine:classify
+        continue-on-error: true
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
 
       - name: Meta ad verification (Ad Library scraper)
         run: npm run engine:ads
