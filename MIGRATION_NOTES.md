@@ -25,6 +25,11 @@ Isolation markers: `@e2e.test` emails, `E2E —` names, `e2e0000…` UUIDs. Re-r
 - No data backfill in the migration — rehosting runs via `npm run media:rehost` (idempotent: only products with a null `image_rehosted_url` are processed; dedupe by sha256).
 - Rollback: serving falls back to the original URL automatically; to fully revert, drop `media_assets` + the column in a new migration and empty the bucket.
 
+## Phase C — Engine queue (APPLIED: `20260629040000_queue_runs.sql`)
+- Adds `queue_runs` (job-execution mirror; RLS on, no client policies → service-role only) read by `/dashboard/health/jobs`.
+- **pg-boss owns its own `pgboss` schema** — it auto-creates/migrates on `boss.start()`; there is **no** Supabase migration for the queue internals (don't hand-write one). Rollback = `drop schema pgboss cascade;` (never touches app tables).
+- Flag-gated by `ENABLE_QUEUE` (default false → cron unchanged). Needs `QUEUE_DATABASE_URL` (session pooler) on the worker.
+
 ## Upcoming (planned, not yet applied)
 - **Phase C (queue):** `pg-boss` creates its own `pgboss` schema on first boot (no manual migration). Flag `ENABLE_QUEUE`.
 - **Phase D (Phase-6 foundations):** `analytics_events`, `usage_counters`, `referrals`, `crm_enrichment` tables + RLS (owner-read; service-role write).

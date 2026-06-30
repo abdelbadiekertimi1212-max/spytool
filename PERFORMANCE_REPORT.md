@@ -33,6 +33,24 @@ External image hosts were the main render risk (hotlink 403s, expired fbcdn medi
 
 Dedupe: identical bytes across stores upload once (unique `content_hash`) → a widely-copied product image costs one object, not N. Worker is incremental + idempotent (`media:rehost`), gated by `ENABLE_IMAGE_REHOST`; serving always falls back so rendering never breaks.
 
+## Phase C — Engine queue / durable execution (29 Jun 2026)
+Reliability, not raw speed. The cron pipeline was all-or-nothing (one failed stage
+aborted the run with no retry/visibility). pg-boss adds durability **without changing
+business logic or the default path**.
+
+| Dimension | Cron (before) | Queue (ENABLE_QUEUE=true) |
+|---|---|---|
+| Failure handling | stage aborts the whole run | per-job **retry + exp. backoff**, then **dead-letter** |
+| Recovery | manual re-run of the whole pipeline | `queue:replay` (redrive failed), per-job `retry`/`cancel` |
+| Concurrency | sequential | per-stage (`1/3/2/2/1`), config-driven |
+| Resumability | restart from scratch | resume-safe chain (each stage enqueues the next) |
+| Visibility | logs only | `queue_runs` + `/dashboard/health/jobs` (latency, failures, last run) |
+| Flag off (default) | — | **byte-for-byte identical to cron** (no regression) |
+
+Per-stage job duration + failure recovery are now measured in `queue_runs` (avg duration,
+failures, running count surfaced on the jobs dashboard). No measurable overhead with the
+flag off (the queue code isn't loaded by the cron scripts).
+
 ## Remaining optimization opportunities
 - ✅ **Re-host scraped images** — done (Phase B, 87.6% smaller). Next: switch winner cards off `unoptimized` to Next/Image optimization now that images are first-party uniform webp, and tighten `remotePatterns` to the Storage host.
 - **Cache dashboard analytics** (short TTL) — `getDashboardAnalytics` runs several aggregates per request; a 60s cache or a materialized view would cut DB load at scale.

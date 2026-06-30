@@ -37,6 +37,8 @@ export default defineConfig({
         "lib/media/serve.ts",
         "lib/media/hash.ts",
         "lib/media/validate.ts",
+        "lib/queue/jobs.ts",
+        "lib/queue/metrics.ts",
         "app/api/**/route.ts",
       ],
       thresholds: {

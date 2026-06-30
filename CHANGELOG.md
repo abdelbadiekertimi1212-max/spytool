@@ -4,6 +4,13 @@ All notable production-hardening changes. Newest first.
 
 ## [Unreleased]
 
+### Phase C — Engine Queue / durable orchestration (29 Jun 2026)
+- **pg-boss** on the existing Postgres (no new infra): `lib/queue/` (`boss`, `jobs`, `enqueue`, `workers`, `metrics`) + `workers/{discover,inventory,classify,ads,winners}.worker.ts`. Workers are thin wrappers over the **existing** engine functions — **no business-logic change**.
+- Per stage: **retry + exponential backoff + timeout** (`expireInSeconds`), shared **dead-letter** queue (`engine.dlq`), config-driven **concurrency** (discover 1 / inventory 3 / classify 2 / ads 2 / winners 1). **Resume-safe chain**: each stage enqueues the next on success; the head is `discover`; `singletonKey` gives idempotency.
+- Observability: `queue_runs` mirror (migration `20260629040000`) → **`/dashboard/health/jobs`** (running / failed / avg latency / last-run per stage). CLI: `npm run queue:work | queue:enqueue | queue:status | queue:replay | queue:drain` (+ cancel/retry).
+- **Flag `ENABLE_QUEUE=false` (default) → cron path is byte-for-byte unchanged.** When true, run a long-lived `queue:work` worker and have the scheduler `queue:enqueue`. pg-boss self-migrates its `pgboss` schema on `start()`.
+- 95 tests (+6 queue jobs/metrics), coverage 83.8% stmts / 73.2% branch. typecheck/lint/build green. See `QUEUE_OPERATIONS.md`.
+
 ### Phase B — Image Rehosting (29 Jun 2026)
 - `lib/media/` ingestion pipeline: `download` (timeout + bounded redirects + mime/size allowlist — rejects svg/html/oversized/corrupt) → `sanitize` (sharp re-encode, strips EXIF/metadata) → `transform` (webp thumb/card/full, q80, ≤1600px, no upscale) → `sha256` dedupe → `upload` to Supabase Storage `product-images` → record `media_assets` → set `products.image_rehosted_url`.
 - Serving: `getProductImage()` (client-safe, no sharp) resolves rehosted → original → `/placeholder-product.svg`; winner cards use it. **No broken images, safe fallback** preserved.

@@ -478,6 +478,42 @@ export type Database = {
           },
         ];
       };
+      queue_runs: {
+        Row: {
+          id: string;
+          job_name: string;
+          status: string;
+          attempt: number;
+          started_at: string;
+          finished_at: string | null;
+          duration_ms: number | null;
+          error: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          job_name: string;
+          status?: string;
+          attempt?: number;
+          started_at?: string;
+          finished_at?: string | null;
+          duration_ms?: number | null;
+          error?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          job_name?: string;
+          status?: string;
+          attempt?: number;
+          started_at?: string;
+          finished_at?: string | null;
+          duration_ms?: number | null;
+          error?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       processed_webhook_events: {
         Row: {
           event_id: string;
