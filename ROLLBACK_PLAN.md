@@ -31,6 +31,11 @@ usually "flip a flag" or "promote the previous deploy" — not a data migration.
 - The collector is fire-and-forget; removing the single webhook `trackServer(...)` call fully reverts the only wiring with zero contract impact.
 - To drop schema (only if truly needed): new down-migration dropping `analytics_events`, `usage_counters`, `referrals`, `crm_enrichment`, `limit_rules` + `drop function public.increment_usage(...)`. No app table depends on them, so this is safe.
 
+## Usage limits (Phase 6.2)
+- **Instant kill switch:** `ENABLE_USAGE_LIMITS=false` (or `LIMITS_ROLLOUT=0`) → all `enforceLimit` calls return allowed, routes behave exactly as pre-6.2. No deploy needed beyond the env change.
+- Partial rollback: lower `LIMITS_ROLLOUT` (sticky buckets shrink cleanly).
+- `limit_rules` are data-only; re-seed previous numbers with a new idempotent upsert migration if needed. `usage_counters` can be truncated safely (counts reset; no app dependency).
+
 ## Activation / onboarding (Phase 6.1)
 - Onboarding is **non-blocking** — hide the prompt by reverting the dashboard `OnboardingCard` render (one conditional) or treat all users as onboarded; nothing gates access, so there is no lockout to undo.
 - Bookmarks + onboarding are additive owner-RLS features. Disable analytics with `ENABLE_ANALYTICS=false`.

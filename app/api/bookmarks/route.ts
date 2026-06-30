@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { bookmarkSchema, parseBody } from "@/lib/validation";
 import { trackServer } from "@/lib/events/collector";
+import { inRollout } from "@/lib/limits/rollout";
+import { enforceLimit, recordUsage } from "@/lib/limits/enforce";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,6 +25,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
+  // Daily bookmark limit (rollout-gated; first bookmark always within allowance).
+  let enforced = false;
+  let usageHeadersOut: Record<string, string> = {};
+  if (inRollout(user.id)) {
+    const { data: subTier } = await supabase
+      .from("subscriptions")
+      .select("package_tier")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const admin = createAdminClient();
+    const enf = await enforceLimit(admin, user.id, subTier?.package_tier ?? "free", "bookmarks_per_day");
+    enforced = enf.enforced;
+    usageHeadersOut = enf.headers;
+    if (!enf.allowed) {
+      trackServer({ event_name: "limit_hit", user_id: user.id, properties: { resource: "bookmarks_per_day" } });
+      return NextResponse.json(
+        { error: "Daily bookmark limit reached for your plan.", code: "limit_reached", upgrade: true },
+        { status: 429, headers: enf.headers }
+      );
+    }
+  }
+
   const { error } = await supabase
     .from("bookmarks")
     .upsert(
@@ -31,6 +56,7 @@ export async function POST(req: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+  if (enforced) await recordUsage(createAdminClient(), user.id, "bookmarks_per_day");
 
   // Track first_bookmark vs bookmark (first save is the activation milestone).
   const { count } = await supabase
@@ -43,7 +69,7 @@ export async function POST(req: Request) {
     properties: { product_id: payload.productId },
   });
 
-  return NextResponse.json({ ok: true, saved: true });
+  return NextResponse.json({ ok: true, saved: true }, { headers: usageHeadersOut });
 }
 
 /** DELETE /api/bookmarks — Body: { productId } — remove a saved winner. */

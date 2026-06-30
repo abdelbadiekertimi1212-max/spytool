@@ -42,6 +42,8 @@ export default defineConfig({
         "lib/events/schemas.ts",
         "lib/events/batch.ts",
         "lib/limits/policy.ts",
+        "lib/limits/rollout.ts",
+        "lib/limits/enforce.ts",
         "lib/activation/score.ts",
         "app/api/**/route.ts",
       ],

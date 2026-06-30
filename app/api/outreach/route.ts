@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { generateOutreach } from "@/lib/groq";
 import { rateLimit } from "@/lib/ratelimit";
 import { outreachSchema, parseBody } from "@/lib/validation";
+import { inRollout } from "@/lib/limits/rollout";
+import { enforceLimit, recordUsage, type EnforceResult } from "@/lib/limits/enforce";
+import { trackServer } from "@/lib/events/collector";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,6 +45,36 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
+  // Usage limit (soft→grace→hard, rollout-gated). No DB work when not enrolled.
+  const plan = subTier?.package_tier ?? "free";
+  let enf: EnforceResult | null = null;
+  if (inRollout(user.id)) {
+    const admin = createAdminClient();
+    enf = await enforceLimit(admin, user.id, plan, "outreach_per_day");
+    if (!enf.allowed) {
+      trackServer({
+        event_name: "limit_hit",
+        user_id: user.id,
+        properties: { resource: "outreach_per_day", plan },
+      });
+      return NextResponse.json(
+        {
+          error: "Daily outreach limit reached for your plan.",
+          code: "limit_reached",
+          upgrade: true,
+        },
+        { status: 429, headers: enf.headers }
+      );
+    }
+    if (enf.decision.nearSoft) {
+      trackServer({
+        event_name: "limit_warning",
+        user_id: user.id,
+        properties: { resource: "outreach_per_day", plan },
+      });
+    }
+  }
+
   const { data: store, error } = await supabase
     .from("stores")
     .select("*")
@@ -76,7 +110,9 @@ export async function POST(req: Request) {
       winnerCount: winnerCount ?? 0,
       locale: payload.locale || "en",
     });
-    return NextResponse.json(result);
+    // Count usage only after a successful generation.
+    if (enf?.enforced) await recordUsage(createAdminClient(), user.id, "outreach_per_day");
+    return NextResponse.json(result, { headers: enf?.headers ?? {} });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 400 });
   }

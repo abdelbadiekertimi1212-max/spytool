@@ -31,6 +31,8 @@ describe("validateEvent", () => {
     expect(EVENT_NAMES).toContain("image_rehost");
     expect(EVENT_NAMES).toContain("onboarding_completed");
     expect(EVENT_NAMES).toContain("first_bookmark");
-    expect(EVENT_NAMES.length).toBe(14);
+    expect(EVENT_NAMES).toContain("limit_hit");
+    expect(EVENT_NAMES).toContain("upgrade_success");
+    expect(EVENT_NAMES.length).toBe(18);
   });
 });

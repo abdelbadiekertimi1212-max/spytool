@@ -2,6 +2,11 @@
 
 **Date:** 30 Jun 2026 (Phase 6.1) · **Risk score:** **~22 / 100** · **Production readiness:** **~88 / 100**
 
+## Phase 6.2 — Usage Limits (delta)
+- **Activation protected:** enforcement is rollout-gated (default off) and free/trial users have no rule → unlimited. Starter limits are generous vs. the first-bookmark activation milestone. **No lockouts** (soft→grace→hard, always a clear 429 + upgrade path).
+- Reversible instantly: `ENABLE_USAGE_LIMITS=false` or `LIMITS_ROLLOUT=0`. Sticky buckets mean monotonic rollout never flips a user out.
+- Coverage **increased** (86.3%/75.2%); typecheck/lint/build green; payments/queue/engine/RLS untouched. **Readiness ~89, risk ~21.**
+
 ## Phase 6.1 — Activation (delta)
 - **Regression risk: low/none.** Onboarding is non-blocking (soft card, no hard redirect) → existing dashboard + E2E flows unchanged. Bookmarks/onboarding are owner-RLS scoped. Analytics collection is fire-and-forget + flag-gated (`ENABLE_ANALYTICS`). Payments/queue/engine/RLS untouched.
 - New API routes validate input (zod) + require auth + tested for 401/400/200.

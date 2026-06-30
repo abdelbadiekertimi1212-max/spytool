@@ -4,6 +4,14 @@ All notable production-hardening changes. Newest first.
 
 ## [Unreleased]
 
+### Phase 6.2 — Usage Limits / monetization gating (30 Jun 2026)
+- **Sticky percentage rollout** `lib/limits/rollout.ts` (`ENABLE_USAGE_LIMITS` + `LIMITS_ROLLOUT` 5→25→50→100; FNV-1a bucket so a user never flips as rollout grows). Default off → zero overhead, no behavior change.
+- `lib/limits/enforce.ts` — `enforceLimit` (check, no DB work when not enrolled) + `recordUsage` (increment only after success) + `usageHeaders` (`X-Usage-Limit/Used/Remaining`).
+- Enforced on **/api/outreach** and **/api/bookmarks**: soft→**grace**→hard (never silent fail, **no lockout**), 429 `{ code:"limit_reached", upgrade:true }` + usage headers; `limit_warning`/`limit_hit` events.
+- `limit_rules` aligned to spec (migration `20260630020000`): starter 10 winners/10 bookmarks/1 outreach · pro 200/100/20 · agency unlimited. **Free/trial = no rule = unlimited (protects activation).**
+- +4 events (`limit_warning`, `limit_hit`, `upgrade_click`, `upgrade_success`). 130 tests (+14), coverage **86.3% stmts / 75.2% branch** (↑). typecheck/lint/build green; no regressions.
+- Note: `winners_per_day` rule is seeded + supported by the engine, but winner *viewing* is intentionally **not hard-gated** yet (would harm activation) — surfaced as usage visibility in 6.3.
+
 ### Phase 6.1 — Activation / first-run experience (30 Jun 2026)
 - Migration `20260630010000_onboarding.sql`: `profiles.onboarding_completed_at / preferred_categories / experience_level / country` (additive; existing RLS covers it).
 - Onboarding: soft, **non-blocking** first-run card on the dashboard + `/dashboard/onboarding` form (interests, experience, country) → `POST /api/onboarding`. No hard redirect → existing dashboard/E2E flow unchanged.

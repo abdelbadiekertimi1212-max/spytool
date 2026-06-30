@@ -17,6 +17,11 @@ export const EVENT_NAMES = [
   "onboarding_completed",
   "first_winner_view",
   "first_bookmark",
+  // Phase 6.2 monetization funnel
+  "limit_warning",
+  "limit_hit",
+  "upgrade_click",
+  "upgrade_success",
 ] as const;
 
 export type EventName = (typeof EVENT_NAMES)[number];

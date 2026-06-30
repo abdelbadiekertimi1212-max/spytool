@@ -2,6 +2,11 @@
 
 **Date:** 30 Jun 2026 (Phase 6.1)
 
+## Phase 6.2 — Usage Limits
+- **Zero overhead when disabled** (default): the whole limit block is gated behind `inRollout()` — a pure in-process FNV hash, no DB call — so unenrolled/disabled requests are untouched.
+- When enrolled: one indexed `limit_rules` read + one `usage_counters` read on check, and a single atomic `increment_usage` RPC after success (no read-modify-write race). Usage headers add negligible cost.
+- `limit_warning`/`limit_hit` are fire-and-forget events (no added response latency).
+
 ## Phase 6.1 — Activation
 - **No added cost to existing paths.** `getActivationStatus` (profile + bookmark count + subscription — all indexed, owner-RLS) is folded into the dashboard's existing parallel `Promise.all`; no new sequential round-trips.
 - Bookmark toggles are **optimistic** (instant UI) with a single owner-RLS insert/delete; first-bookmark detection is one `head:true` count.
