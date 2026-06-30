@@ -31,5 +31,10 @@ usually "flip a flag" or "promote the previous deploy" — not a data migration.
 - The collector is fire-and-forget; removing the single webhook `trackServer(...)` call fully reverts the only wiring with zero contract impact.
 - To drop schema (only if truly needed): new down-migration dropping `analytics_events`, `usage_counters`, `referrals`, `crm_enrichment`, `limit_rules` + `drop function public.increment_usage(...)`. No app table depends on them, so this is safe.
 
+## Activation / onboarding (Phase 6.1)
+- Onboarding is **non-blocking** — hide the prompt by reverting the dashboard `OnboardingCard` render (one conditional) or treat all users as onboarded; nothing gates access, so there is no lockout to undo.
+- Bookmarks + onboarding are additive owner-RLS features. Disable analytics with `ENABLE_ANALYTICS=false`.
+- Schema revert (only if needed): new down-migration dropping the four `profiles` onboarding columns. The `bookmarks` table predates this phase and is unaffected.
+
 ## Verify after any rollback
 `npm run typecheck && npm run lint && npm test && npm run build`, then `GET /api/health` = 200.

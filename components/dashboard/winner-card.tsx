@@ -17,6 +17,7 @@ import type { WinnerProduct } from "@/lib/dashboard/types";
 import { getProductImage } from "@/lib/media/serve";
 import { AdCreative } from "./ad-creative";
 import { MarginCalculator } from "./margin-calculator";
+import { BookmarkButton } from "./bookmark-button";
 import { Badge } from "@/components/ui/badge";
 import { formatDZD, formatNumber, daysSince } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -62,11 +63,14 @@ export function WinnerCard({ winner, index }: { winner: WinnerProduct; index: nu
               {t("tracking")}
             </Badge>
           )}
-          {winner.is_winner && sinceDays !== null ? (
-            <span className="rounded-full bg-black/60 px-2 py-0.5 text-xs text-white backdrop-blur">
-              {t("daysAgo", { days: sinceDays })}
-            </span>
-          ) : null}
+          <div className="flex items-center gap-1.5">
+            {winner.is_winner && sinceDays !== null ? (
+              <span className="rounded-full bg-black/60 px-2 py-0.5 text-xs text-white backdrop-blur">
+                {t("daysAgo", { days: sinceDays })}
+              </span>
+            ) : null}
+            <BookmarkButton productId={winner.id} initialSaved={winner.bookmarked} />
+          </div>
         </div>
       </div>
 

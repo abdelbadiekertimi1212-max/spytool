@@ -18,6 +18,16 @@ export const outreachSendSchema = z.object({
   text: z.string().min(1).max(10000),
 });
 
+export const onboardingSchema = z.object({
+  preferred_categories: z.array(z.string().max(64)).max(20).optional(),
+  experience_level: z.enum(["beginner", "intermediate", "advanced"]).optional(),
+  country: z.string().min(2).max(2).optional(),
+});
+
+export const bookmarkSchema = z.object({
+  productId: z.string().uuid(),
+});
+
 /** Parse a Request JSON body against a schema; returns data or null on failure. */
 export async function parseBody<T>(
   req: Request,

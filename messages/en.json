@@ -55,6 +55,8 @@
     "upsellTitle": "Unlock the Winner Radar",
     "upsellBody": "Your free trial has ended. Upgrade to keep tracking live winning products and active Meta ads across the Algerian COD market.",
     "upsellCta": "View plans",
+    "save": "Save",
+    "saved": "Saved",
     "winnersTitle": "Winner Product Radar",
     "winnersSubtitle": "Confirmed winners: rapid stock depletion backed by active Meta ads.",
     "winner": "Winner",
@@ -140,6 +142,20 @@
     "daysActiveShort": "{days}d active",
     "adsShort": "{count} ads",
     "empty": "No data yet — run the engine."
+  },
+  "Onboarding": {
+    "title": "Welcome to WinnerRadar",
+    "subtitle": "A few quick choices to tailor your winner feed.",
+    "cardTitle": "Finish setting up",
+    "cardBody": "Pick your niches to personalize the radar and save your first winner.",
+    "cardCta": "Get started",
+    "interestsLabel": "Which niches interest you?",
+    "experienceLabel": "Your experience",
+    "countryLabel": "Country",
+    "level_beginner": "Beginner",
+    "level_intermediate": "Intermediate",
+    "level_advanced": "Advanced",
+    "finish": "Finish & explore winners"
   },
   "Billing": {
     "title": "Billing & Plans",

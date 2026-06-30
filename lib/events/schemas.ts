@@ -12,6 +12,11 @@ export const EVENT_NAMES = [
   "subscription_change",
   "queue_failure",
   "image_rehost",
+  // Phase 6.1 activation funnel
+  "onboarding_started",
+  "onboarding_completed",
+  "first_winner_view",
+  "first_bookmark",
 ] as const;
 
 export type EventName = (typeof EVENT_NAMES)[number];

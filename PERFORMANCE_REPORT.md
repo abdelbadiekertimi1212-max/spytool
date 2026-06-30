@@ -1,5 +1,15 @@
 # Performance Report
 
+**Date:** 30 Jun 2026 (Phase 6.1)
+
+## Phase 6.1 — Activation
+- **No added cost to existing paths.** `getActivationStatus` (profile + bookmark count + subscription — all indexed, owner-RLS) is folded into the dashboard's existing parallel `Promise.all`; no new sequential round-trips.
+- Bookmark toggles are **optimistic** (instant UI) with a single owner-RLS insert/delete; first-bookmark detection is one `head:true` count.
+- Event collection is fire-and-forget (`void`) → `dashboard_view`/`onboarding_*` tracking adds zero latency to responses.
+- Bundle: `/dashboard/onboarding` 3.3 kB; existing dashboard first-load JS unchanged.
+
+---
+
 **Date:** 29 Jun 2026
 
 ## Wins delivered

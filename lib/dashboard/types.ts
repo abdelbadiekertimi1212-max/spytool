@@ -7,6 +7,8 @@ import type { Ad, Product, Store } from "@/types/supabase";
  */
 export type WinnerProduct = Product & {
   store: (Store & { ads: Ad[] }) | null;
+  /** Transient (not from DB select): set by the page from the user's bookmarks. */
+  bookmarked?: boolean;
 };
 
 /** A B2B lead row: a store enriched with winner/velocity aggregates. */

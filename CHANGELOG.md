@@ -4,6 +4,13 @@ All notable production-hardening changes. Newest first.
 
 ## [Unreleased]
 
+### Phase 6.1 — Activation / first-run experience (30 Jun 2026)
+- Migration `20260630010000_onboarding.sql`: `profiles.onboarding_completed_at / preferred_categories / experience_level / country` (additive; existing RLS covers it).
+- Onboarding: soft, **non-blocking** first-run card on the dashboard + `/dashboard/onboarding` form (interests, experience, country) → `POST /api/onboarding`. No hard redirect → existing dashboard/E2E flow unchanged.
+- Bookmarks (activation milestone): `POST/DELETE /api/bookmarks` (RLS owner) + optimistic `BookmarkButton` on winner cards; feed marks saved state from the user's bookmark set.
+- Activation engine `lib/activation/` — pure `computeActivation` (onboarding 40 / bookmark 35 / upgrade 25; activated = onboarded + ≥1 saved) + `getActivationStatus`. 4 new funnel events (`onboarding_started/completed`, `first_winner_view`, `first_bookmark`); `dashboard_view` + `onboarding_started` tracked server-side (fire-and-forget).
+- 116 tests (+9), coverage 84.9% stmts / 73.9% branch (above gate). typecheck/lint/build green. No regressions; payments/queue/engine/RLS untouched.
+
 ### Phase D — Growth Foundations (29 Jun 2026)
 - Migration `20260629050000_growth_foundations.sql`: `analytics_events` (partition-ready), `usage_counters` (daily/monthly/lifetime), `referrals` (no self-referral / no dup), `crm_enrichment`, `limit_rules` (seeded starter/pro/agency) + the atomic `increment_usage` RPC (service-role only). RLS: analytics/crm service-role-only; usage/referrals owner-readable; limit_rules authenticated-readable.
 - `lib/events/` — `schemas` (10-event zod taxonomy), `batch` (buffer), `flush`, `track`, `collector` (`trackServer`: fire-and-forget, contract-preserving). Wired once into the Chargily webhook (`subscription_change`).

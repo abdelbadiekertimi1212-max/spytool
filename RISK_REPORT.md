@@ -1,5 +1,15 @@
 # Risk Report
 
+**Date:** 30 Jun 2026 (Phase 6.1) · **Risk score:** **~22 / 100** · **Production readiness:** **~88 / 100**
+
+## Phase 6.1 — Activation (delta)
+- **Regression risk: low/none.** Onboarding is non-blocking (soft card, no hard redirect) → existing dashboard + E2E flows unchanged. Bookmarks/onboarding are owner-RLS scoped. Analytics collection is fire-and-forget + flag-gated (`ENABLE_ANALYTICS`). Payments/queue/engine/RLS untouched.
+- New API routes validate input (zod) + require auth + tested for 401/400/200.
+- Coverage maintained (84.9% stmts / 73.9% branch, above the 75/70 gate); typecheck/lint/build green.
+- Residual: activation metrics (Time-To-First-Winner, activation %) require the analytics_events data to accumulate before the Phase 8 exec dashboard can report them.
+
+---
+
 **Date:** 29 Jun 2026 · **Risk score:** **24 / 100** (down from 38) · **Production readiness:** **~86 / 100**
 
 ## Resolved this session

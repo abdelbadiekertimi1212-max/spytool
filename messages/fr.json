@@ -55,6 +55,8 @@
     "upsellTitle": "Débloquez le Winner Radar",
     "upsellBody": "Votre essai gratuit est terminé. Passez à un forfait pour continuer à suivre les produits gagnants et les publicités Meta actives du marché COD algérien.",
     "upsellCta": "Voir les forfaits",
+    "save": "Enregistrer",
+    "saved": "Enregistré",
     "winnersTitle": "Radar des produits gagnants",
     "winnersSubtitle": "Gagnants confirmés : épuisement rapide du stock soutenu par des publicités Meta actives.",
     "winner": "Gagnant",
@@ -140,6 +142,20 @@
     "daysActiveShort": "{days}j actif",
     "adsShort": "{count} pubs",
     "empty": "Pas encore de données — lancez le moteur."
+  },
+  "Onboarding": {
+    "title": "Bienvenue sur WinnerRadar",
+    "subtitle": "Quelques choix rapides pour personnaliser votre flux de gagnants.",
+    "cardTitle": "Terminez la configuration",
+    "cardBody": "Choisissez vos niches pour personnaliser le radar et enregistrez votre premier gagnant.",
+    "cardCta": "Commencer",
+    "interestsLabel": "Quelles niches vous intéressent ?",
+    "experienceLabel": "Votre expérience",
+    "countryLabel": "Pays",
+    "level_beginner": "Débutant",
+    "level_intermediate": "Intermédiaire",
+    "level_advanced": "Avancé",
+    "finish": "Terminer & explorer les gagnants"
   },
   "Billing": {
     "title": "Facturation & Forfaits",

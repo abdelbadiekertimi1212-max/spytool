@@ -29,6 +29,8 @@ describe("validateEvent", () => {
   it("covers the full taxonomy", () => {
     expect(EVENT_NAMES).toContain("queue_failure");
     expect(EVENT_NAMES).toContain("image_rehost");
-    expect(EVENT_NAMES.length).toBe(10);
+    expect(EVENT_NAMES).toContain("onboarding_completed");
+    expect(EVENT_NAMES).toContain("first_bookmark");
+    expect(EVENT_NAMES.length).toBe(14);
   });
 });

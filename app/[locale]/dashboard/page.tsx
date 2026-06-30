@@ -2,10 +2,13 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { getSubscriptionState } from "@/lib/supabase/subscription";
+import { getActivationStatus, getUserBookmarkIds } from "@/lib/activation/service";
 import { getDashboardAnalytics } from "@/lib/engine/osint";
+import { trackServer } from "@/lib/events/collector";
 import { AnalyticsOverview } from "@/components/dashboard/analytics-overview";
 import { WinnerFeed } from "@/components/dashboard/winner-feed";
 import { UpsellGate } from "@/components/dashboard/upsell-gate";
+import { OnboardingCard } from "@/components/dashboard/onboarding-card";
 import type { WinnerProduct } from "@/lib/dashboard/types";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +21,9 @@ export default async function WinnersPage({
   setRequestLocale(params.locale);
 
   const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Paywall: RLS hides the catalog without an active sub; show an upsell here.
   const sub = await getSubscriptionState(supabase);
@@ -28,9 +34,10 @@ export default async function WinnersPage({
       </div>
     );
   }
-  // Run the market-intelligence aggregation and the winner feed query in
-  // parallel. Each product carries its store + ads so cards render real ads.
-  const [{ data }, analytics] = await Promise.all([
+
+  // Run the market-intelligence aggregation, the winner feed query, activation
+  // status and the user's bookmark set in parallel.
+  const [{ data }, analytics, activation, bookmarkIds] = await Promise.all([
     supabase
       .from("products")
       .select("*, store:stores(*, ads(*))")
@@ -39,13 +46,23 @@ export default async function WinnersPage({
       .order("first_seen_at", { ascending: false })
       .limit(200),
     getDashboardAnalytics(supabase),
+    user ? getActivationStatus(supabase, user.id) : Promise.resolve(null),
+    user ? getUserBookmarkIds(supabase, user.id) : Promise.resolve(new Set<string>()),
   ]);
 
-  const winners = (data ?? []) as unknown as WinnerProduct[];
+  const winners = (data ?? []).map((p) => ({
+    ...p,
+    bookmarked: bookmarkIds.has((p as { id: string }).id),
+  })) as unknown as WinnerProduct[];
   const t = await getTranslations("Dashboard");
+
+  // Activation funnel signal (server-side, fire-and-forget).
+  if (user) trackServer({ event_name: "dashboard_view", user_id: user.id });
 
   return (
     <div className="container space-y-10 py-8">
+      {activation && !activation.onboarded ? <OnboardingCard /> : null}
+
       <AnalyticsOverview data={analytics} />
 
       <div>
