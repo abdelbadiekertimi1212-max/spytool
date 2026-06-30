@@ -17,6 +17,8 @@
     "seed:winner": "tsx scripts/seed-winner-demo.ts",
     "engine:discover": "tsx scripts/discover-stores.ts",
     "stats": "tsx scripts/stats.ts",
+    "media:rehost": "tsx workers/process-product-images.ts",
+    "media:cleanup": "tsx workers/cleanup-media.ts",
     "docs:pdf": "node scripts/gen-docs-pdf.mjs",
     "engine:inventory": "tsx scripts/scrape-inventory.ts",
     "engine:ads": "tsx scripts/fetch-ads.ts",
@@ -50,6 +52,7 @@
     "recharts": "^3.9.0",
     "resend": "^6.16.0",
     "server-only": "^0.0.1",
+    "sharp": "^0.35.2",
     "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.4.3"

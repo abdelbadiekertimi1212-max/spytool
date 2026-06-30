@@ -19,7 +19,12 @@ Migrations are append-only and idempotent where possible. **Never edit an applie
 is the canonical catalog-fixture definition (kept in sync with the script).
 Isolation markers: `@e2e.test` emails, `E2E —` names, `e2e0000…` UUIDs. Re-runnable & parallel-safe.
 
+## Phase B — Image rehosting (APPLIED: `20260629030000_media_assets.sql`)
+- Adds `products.image_rehosted_url`, the `media_assets` ledger (index on `product_id`, **unique** on `content_hash`), and the public `product-images` Storage bucket.
+- **Version note:** `20260629020000` was already taken by `winner_metrics_rpc`, so this migration was bumped to `…030000`. Migration versions must be globally unique; check `ls supabase/migrations` before choosing a timestamp.
+- No data backfill in the migration — rehosting runs via `npm run media:rehost` (idempotent: only products with a null `image_rehosted_url` are processed; dedupe by sha256).
+- Rollback: serving falls back to the original URL automatically; to fully revert, drop `media_assets` + the column in a new migration and empty the bucket.
+
 ## Upcoming (planned, not yet applied)
-- **Phase B (images):** `media_assets` dedupe table (hash PK: url, width, height, mime, bytes) + a public `product-images` storage bucket + storage read policy. Flag `ENABLE_IMAGE_REHOST`.
 - **Phase C (queue):** `pg-boss` creates its own `pgboss` schema on first boot (no manual migration). Flag `ENABLE_QUEUE`.
 - **Phase D (Phase-6 foundations):** `analytics_events`, `usage_counters`, `referrals`, `crm_enrichment` tables + RLS (owner-read; service-role write).

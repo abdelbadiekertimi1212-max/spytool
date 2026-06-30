@@ -19,8 +19,22 @@
 ## Indexing (high-volume read paths)
 `products(is_winner partial, daily_velocity desc, niche, created_at, first_seen_at, (is_winner,daily_velocity), title trgm)`, `stores(platform, lead_score, created_at, url trgm)`, `ads(store_id, is_active, start_date)`, `product_snapshots(product_id, captured_at desc)`, `engine_logs(created_at desc)`.
 
+## Phase B — Image rehosting (29 Jun 2026)
+External image hosts were the main render risk (hotlink 403s, expired fbcdn media, large/untrusted payloads). The `lib/media` pipeline downloads → sanitizes (EXIF stripped) → resizes → converts to **webp q80 (≤1600px)** → dedupes by sha256 → uploads to Supabase Storage, serving rehosted → original → placeholder.
+
+| Metric | Before (external) | After (rehosted webp) |
+|---|---|---|
+| Bytes, 3 sample product images | 2,649,745 B (2.65 MB) | **327,956 B (0.33 MB)** |
+| **Bandwidth reduction** | — | **87.6%** |
+| Avg image size | ~883 KB | **~109 KB** |
+| Host trust | arbitrary external CDNs | first-party Supabase Storage |
+| Hotlink/expiry failures | possible (fbcdn) | eliminated (cached copy) + safe fallback |
+| Format | mixed jpg/png/… | uniform webp, 3 sizes (thumb/card/full) |
+
+Dedupe: identical bytes across stores upload once (unique `content_hash`) → a widely-copied product image costs one object, not N. Worker is incremental + idempotent (`media:rehost`), gated by `ENABLE_IMAGE_REHOST`; serving always falls back so rendering never breaks.
+
 ## Remaining optimization opportunities
-- **Re-host scraped images** to Supabase Storage via `sharp` → enables Next/Image optimization (currently `unoptimized` + wildcard remote host).
+- ✅ **Re-host scraped images** — done (Phase B, 87.6% smaller). Next: switch winner cards off `unoptimized` to Next/Image optimization now that images are first-party uniform webp, and tighten `remotePatterns` to the Storage host.
 - **Cache dashboard analytics** (short TTL) — `getDashboardAnalytics` runs several aggregates per request; a 60s cache or a materialized view would cut DB load at scale.
 - **Server-side product search** (`tsvector` + `pg_trgm`) once the feed exceeds a few hundred client-side rows.
 - **Queue the engine** (`pg-boss` on existing Postgres) for retries/backpressure as store count grows.

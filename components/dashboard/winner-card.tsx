@@ -9,12 +9,12 @@ import {
   TrendingUp,
   ChevronDown,
   ExternalLink,
-  ImageOff,
   Calculator,
   Tag,
 } from "lucide-react";
 
 import type { WinnerProduct } from "@/lib/dashboard/types";
+import { getProductImage } from "@/lib/media/serve";
 import { AdCreative } from "./ad-creative";
 import { MarginCalculator } from "./margin-calculator";
 import { Badge } from "@/components/ui/badge";
@@ -43,20 +43,14 @@ export function WinnerCard({ winner, index }: { winner: WinnerProduct; index: nu
       className="group flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-all hover:border-winner/40 hover:shadow-lg hover:shadow-winner/5"
     >
       <div className="relative aspect-square overflow-hidden bg-muted">
-        {winner.image_url ? (
-          <Image
-            src={winner.image_url}
-            alt={winner.title}
-            fill
-            sizes="(max-width: 768px) 50vw, 25vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-            unoptimized
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-muted-foreground">
-            <ImageOff className="h-8 w-8" />
-          </div>
-        )}
+        <Image
+          src={getProductImage(winner)}
+          alt={winner.title}
+          fill
+          sizes="(max-width: 768px) 50vw, 25vw"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          unoptimized
+        />
         <div className="absolute inset-x-0 top-0 flex items-start justify-between p-2">
           {winner.is_winner ? (
             <Badge variant="winner" className="gap-1 shadow">

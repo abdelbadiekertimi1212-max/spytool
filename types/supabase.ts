@@ -189,6 +189,7 @@ export type Database = {
           compare_at_price: number | null;
           currency: string;
           image_url: string | null;
+          image_rehosted_url: string | null;
           product_url: string | null;
           current_stock: number | null;
           initial_stock: number | null;
@@ -213,6 +214,7 @@ export type Database = {
           compare_at_price?: number | null;
           currency?: string;
           image_url?: string | null;
+          image_rehosted_url?: string | null;
           product_url?: string | null;
           current_stock?: number | null;
           initial_stock?: number | null;
@@ -237,6 +239,7 @@ export type Database = {
           compare_at_price?: number | null;
           currency?: string;
           image_url?: string | null;
+          image_rehosted_url?: string | null;
           product_url?: string | null;
           current_stock?: number | null;
           initial_stock?: number | null;
@@ -425,6 +428,55 @@ export type Database = {
           created_at?: string;
         };
         Relationships: [];
+      };
+      media_assets: {
+        Row: {
+          id: string;
+          product_id: string | null;
+          source_url: string | null;
+          storage_path: string | null;
+          content_hash: string;
+          mime: string | null;
+          width: number | null;
+          height: number | null;
+          size_bytes: number | null;
+          status: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          product_id?: string | null;
+          source_url?: string | null;
+          storage_path?: string | null;
+          content_hash: string;
+          mime?: string | null;
+          width?: number | null;
+          height?: number | null;
+          size_bytes?: number | null;
+          status?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          product_id?: string | null;
+          source_url?: string | null;
+          storage_path?: string | null;
+          content_hash?: string;
+          mime?: string | null;
+          width?: number | null;
+          height?: number | null;
+          size_bytes?: number | null;
+          status?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "media_assets_product_id_fkey";
+            columns: ["product_id"];
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       processed_webhook_events: {
         Row: {

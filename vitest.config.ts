@@ -34,6 +34,9 @@ export default defineConfig({
         "lib/ratelimit.ts",
         "lib/chargily.ts",
         "lib/supabase/subscription.ts",
+        "lib/media/serve.ts",
+        "lib/media/hash.ts",
+        "lib/media/validate.ts",
         "app/api/**/route.ts",
       ],
       thresholds: {

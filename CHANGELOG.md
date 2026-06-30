@@ -4,6 +4,12 @@ All notable production-hardening changes. Newest first.
 
 ## [Unreleased]
 
+### Phase B — Image Rehosting (29 Jun 2026)
+- `lib/media/` ingestion pipeline: `download` (timeout + bounded redirects + mime/size allowlist — rejects svg/html/oversized/corrupt) → `sanitize` (sharp re-encode, strips EXIF/metadata) → `transform` (webp thumb/card/full, q80, ≤1600px, no upscale) → `sha256` dedupe → `upload` to Supabase Storage `product-images` → record `media_assets` → set `products.image_rehosted_url`.
+- Serving: `getProductImage()` (client-safe, no sharp) resolves rehosted → original → `/placeholder-product.svg`; winner cards use it. **No broken images, safe fallback** preserved.
+- Migration `20260629030000_media_assets.sql` (table + `product_id` index + unique `content_hash` + public bucket). Workers `media:rehost` / `media:cleanup`. Flags `ENABLE_IMAGE_REHOST` (default on, gates the worker only) / `ENABLE_IMAGE_BACKFILL`.
+- **Live verified:** 3 real product images rehosted, **87.6% bandwidth reduction** (2.65 MB → 0.33 MB), 0 failures. 89 tests (+16: serve/hash/validate/transform/ingest), coverage 84.9% stmts / 75.1% branch.
+
 ### Phase A — Real E2E Environment (29 Jun 2026)
 - `supabase/seed-test.sql` + `scripts/reset-test-env.ts`: deterministic, isolated, re-runnable fixtures — active subscriber / expired / admin users (Auth admin API) + seeded stores/products/ads/snapshots (markers: `@e2e.test`, `E2E —`, fixed UUIDs).
 - Playwright: `globalSetup`/`globalTeardown` (reset/teardown), `auth.setup.ts` storage-state project, scenario specs — auth, dashboard, paywall, checkout, outreach, logout (bookmark `fixme` until Phase 6 UI).
