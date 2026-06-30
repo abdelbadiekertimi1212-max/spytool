@@ -514,6 +514,141 @@ export type Database = {
         };
         Relationships: [];
       };
+      analytics_events: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          anonymous_id: string | null;
+          event_name: string;
+          properties: Json;
+          session_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          anonymous_id?: string | null;
+          event_name: string;
+          properties?: Json;
+          session_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          anonymous_id?: string | null;
+          event_name?: string;
+          properties?: Json;
+          session_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      usage_counters: {
+        Row: {
+          user_id: string;
+          metric: string;
+          window: string;
+          value: number;
+          reset_at: string | null;
+        };
+        Insert: {
+          user_id: string;
+          metric: string;
+          window: string;
+          value?: number;
+          reset_at?: string | null;
+        };
+        Update: {
+          user_id?: string;
+          metric?: string;
+          window?: string;
+          value?: number;
+          reset_at?: string | null;
+        };
+        Relationships: [];
+      };
+      referrals: {
+        Row: {
+          id: string;
+          referrer_user_id: string;
+          referred_user_id: string | null;
+          code: string;
+          status: string;
+          reward_state: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          referrer_user_id: string;
+          referred_user_id?: string | null;
+          code: string;
+          status?: string;
+          reward_state?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          referrer_user_id?: string;
+          referred_user_id?: string | null;
+          code?: string;
+          status?: string;
+          reward_state?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      crm_enrichment: {
+        Row: {
+          user_id: string;
+          source: string | null;
+          score: number;
+          stage: string;
+          metadata: Json;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          source?: string | null;
+          score?: number;
+          stage?: string;
+          metadata?: Json;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          source?: string | null;
+          score?: number;
+          stage?: string;
+          metadata?: Json;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      limit_rules: {
+        Row: {
+          plan: string;
+          resource: string;
+          soft_limit: number;
+          hard_limit: number;
+          enabled: boolean;
+        };
+        Insert: {
+          plan: string;
+          resource: string;
+          soft_limit: number;
+          hard_limit: number;
+          enabled?: boolean;
+        };
+        Update: {
+          plan?: string;
+          resource?: string;
+          soft_limit?: number;
+          hard_limit?: number;
+          enabled?: boolean;
+        };
+        Relationships: [];
+      };
       processed_webhook_events: {
         Row: {
           event_id: string;
@@ -540,6 +675,15 @@ export type Database = {
     Functions: {
       apply_winner_metrics: {
         Args: { updates: Json };
+        Returns: number;
+      };
+      increment_usage: {
+        Args: {
+          p_user_id: string;
+          p_metric: string;
+          p_window: string;
+          p_amount?: number;
+        };
         Returns: number;
       };
     };

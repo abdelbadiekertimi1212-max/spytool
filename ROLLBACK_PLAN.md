@@ -26,5 +26,10 @@ usually "flip a flag" or "promote the previous deploy" — not a data migration.
 ## Queue (Phase C)
 - Stop the worker; set `ENABLE_QUEUE=false`. The `pgboss` schema can be dropped (`drop schema pgboss cascade`) without touching app tables.
 
+## Growth foundations (Phase D)
+- All Phase-D tables are **additive and dormant**. Disable behavior with flags: `ENABLE_ANALYTICS=false` (stops event writes), `ENABLE_USAGE_LIMITS=false` (checks allow-all — default), `ENABLE_REFERRALS=false`, `ENABLE_CRM=false`.
+- The collector is fire-and-forget; removing the single webhook `trackServer(...)` call fully reverts the only wiring with zero contract impact.
+- To drop schema (only if truly needed): new down-migration dropping `analytics_events`, `usage_counters`, `referrals`, `crm_enrichment`, `limit_rules` + `drop function public.increment_usage(...)`. No app table depends on them, so this is safe.
+
 ## Verify after any rollback
 `npm run typecheck && npm run lint && npm test && npm run build`, then `GET /api/health` = 200.

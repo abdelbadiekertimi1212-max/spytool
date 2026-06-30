@@ -4,6 +4,12 @@ All notable production-hardening changes. Newest first.
 
 ## [Unreleased]
 
+### Phase D — Growth Foundations (29 Jun 2026)
+- Migration `20260629050000_growth_foundations.sql`: `analytics_events` (partition-ready), `usage_counters` (daily/monthly/lifetime), `referrals` (no self-referral / no dup), `crm_enrichment`, `limit_rules` (seeded starter/pro/agency) + the atomic `increment_usage` RPC (service-role only). RLS: analytics/crm service-role-only; usage/referrals owner-readable; limit_rules authenticated-readable.
+- `lib/events/` — `schemas` (10-event zod taxonomy), `batch` (buffer), `flush`, `track`, `collector` (`trackServer`: fire-and-forget, contract-preserving). Wired once into the Chargily webhook (`subscription_change`).
+- `lib/limits/` — `policy` (pure decide/resolve), `check` (allow-all when disabled), `increment` (RPC), `reset`.
+- Flags: `ENABLE_ANALYTICS=true`, `ENABLE_USAGE_LIMITS=false`, `ENABLE_REFERRALS=false`, `ENABLE_CRM=false`. **No UI / no behavior change.** Coverage 84.3%/74.2% (107 tests). Docs: SCHEMA_REPORT, DATA_FLOW, LIMITS_GUIDE.
+
 ### Phase C — Engine Queue / durable orchestration (29 Jun 2026)
 - **pg-boss** on the existing Postgres (no new infra): `lib/queue/` (`boss`, `jobs`, `enqueue`, `workers`, `metrics`) + `workers/{discover,inventory,classify,ads,winners}.worker.ts`. Workers are thin wrappers over the **existing** engine functions — **no business-logic change**.
 - Per stage: **retry + exponential backoff + timeout** (`expireInSeconds`), shared **dead-letter** queue (`engine.dlq`), config-driven **concurrency** (discover 1 / inventory 3 / classify 2 / ads 2 / winners 1). **Resume-safe chain**: each stage enqueues the next on success; the head is `discover`; `singletonKey` gives idempotency.

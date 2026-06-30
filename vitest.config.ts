@@ -39,6 +39,9 @@ export default defineConfig({
         "lib/media/validate.ts",
         "lib/queue/jobs.ts",
         "lib/queue/metrics.ts",
+        "lib/events/schemas.ts",
+        "lib/events/batch.ts",
+        "lib/limits/policy.ts",
         "app/api/**/route.ts",
       ],
       thresholds: {

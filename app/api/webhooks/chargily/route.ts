@@ -7,6 +7,7 @@ import {
 } from "@/lib/chargily";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isPaidTier } from "@/lib/billing";
+import { trackServer } from "@/lib/events/collector";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -75,6 +76,14 @@ export async function POST(req: Request) {
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
+
+      // Server-side analytics collector — fire-and-forget, never blocks/throws,
+      // gated by ENABLE_ANALYTICS. Does not affect the webhook response.
+      trackServer({
+        event_name: "subscription_change",
+        user_id: userId,
+        properties: { tier, source: "chargily" },
+      });
     }
   }
 
