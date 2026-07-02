@@ -19,14 +19,25 @@ import { Badge } from "@/components/ui/badge";
 export function Pricing({
   currentTier,
   status,
+  variant = "control",
 }: {
   currentTier: string;
   status: string;
+  variant?: "control" | "A" | "B";
 }) {
   const t = useTranslations("Billing");
   const locale = useLocale();
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Presentation experiment — ORDER only, never prices. Control = as defined;
+  // A = lead with Pro; B = reverse (agency-first).
+  const tiers =
+    variant === "A"
+      ? [...PAID_TIERS].sort((a, b) => (a.tier === "pro" ? -1 : b.tier === "pro" ? 1 : 0))
+      : variant === "B"
+        ? [...PAID_TIERS].slice().reverse()
+        : PAID_TIERS;
 
   async function upgrade(tier: string) {
     setLoadingTier(tier);
@@ -59,7 +70,7 @@ export function Pricing({
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
       <div className="grid gap-4 md:grid-cols-3">
-        {PAID_TIERS.map((plan) => {
+        {tiers.map((plan) => {
           const isCurrent = currentTier === plan.tier;
           const highlight = plan.tier === "pro";
           return (

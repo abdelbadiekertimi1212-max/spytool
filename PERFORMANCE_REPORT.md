@@ -2,6 +2,12 @@
 
 **Date:** 30 Jun 2026 (Phase 6.1)
 
+## Phase 6.3 — Monetization
+- **No change to hot paths.** Usage/billing/revenue are dedicated `force-dynamic` pages read on demand; the winner feed, engine, and checkout flow are untouched.
+- `getUsageSummary` = 2 indexed reads (limit_rules + usage_counters) in one `Promise.all`. Revenue KPIs = 1 subscriptions scan + 1 head count (internal page only).
+- Conversion events are fire-and-forget (`void trackServer`), so pricing/checkout tracking adds zero response latency.
+- New route bundles are tiny (usage / revenue ≈ 862 B each). No new dependency.
+
 ## Phase 6.2 — Usage Limits
 - **Zero overhead when disabled** (default): the whole limit block is gated behind `inRollout()` — a pure in-process FNV hash, no DB call — so unenrolled/disabled requests are untouched.
 - When enrolled: one indexed `limit_rules` read + one `usage_counters` read on check, and a single atomic `increment_usage` RPC after success (no read-modify-write race). Usage headers add negligible cost.

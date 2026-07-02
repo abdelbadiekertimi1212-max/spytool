@@ -84,6 +84,8 @@ export async function POST(req: Request) {
         user_id: userId,
         properties: { tier, source: "chargily" },
       });
+      trackServer({ event_name: "checkout_complete", user_id: userId, properties: { tier } });
+      trackServer({ event_name: "upgrade_success", user_id: userId, properties: { tier } });
     }
   }
 

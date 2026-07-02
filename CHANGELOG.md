@@ -4,6 +4,16 @@ All notable production-hardening changes. Newest first.
 
 ## [Unreleased]
 
+### Phase 6.3 — Monetization (30 Jun 2026)
+- **Usage dashboard** `/dashboard/usage` + `UsagePanel` — per-resource (winners/bookmarks/outreach) daily usage, progress bars, remaining, and states (healthy / near / grace / reached). Engine: `lib/limits/usage.ts` (`usageState` pure + `getUsageSummary`).
+- **Billing center** — extended `/dashboard/billing` with current-plan card (tier/status/renewal), usage panel, plan matrix, and **cancel/resume** via `/api/billing` (soft `cancel_at_period_end` toggle; **existing Chargily payment flow untouched**).
+- **Plan comparison** `PlanMatrix` — starter/pro/agency features, limits, price, Pro recommendation. No fake urgency.
+- **Conversion funnel** — +5 events (`pricing_open`, `upgrade_open`, `checkout_open`, `checkout_complete`, `downgrade`); tracked server-side (billing page → pricing_open, checkout route → checkout_open, webhook → checkout_complete + upgrade_success). No client SDK.
+- **Pricing experiments** `lib/experiments.ts` — sticky A/B/Control (flag `PRICING_EXPERIMENT`, default control) varying **order/copy only, never prices**.
+- **Revenue analytics** `/dashboard/internal/revenue` (internal-only via `INTERNAL_EMAILS` allowlist → 404 otherwise) + `lib/analytics/revenue.ts` (MRR / ARR / ARPU / paying / conversion%).
+- **Retention safety** — trial/free = no limit rule = unlimited; onboarding, first winner, first bookmark never blocked (starter limits generous vs. activation).
+- 148 tests (+13), coverage **87.3% stmts / 76.9% branch** (↑). No schema migration (reuses Phase D + existing subscription columns). typecheck/lint/build green; subscriptions/limits/queue/engine/RLS preserved.
+
 ### Phase 6.2 — Usage Limits / monetization gating (30 Jun 2026)
 - **Sticky percentage rollout** `lib/limits/rollout.ts` (`ENABLE_USAGE_LIMITS` + `LIMITS_ROLLOUT` 5→25→50→100; FNV-1a bucket so a user never flips as rollout grows). Default off → zero overhead, no behavior change.
 - `lib/limits/enforce.ts` — `enforceLimit` (check, no DB work when not enrolled) + `recordUsage` (increment only after success) + `usageHeaders` (`X-Usage-Limit/Used/Remaining`).

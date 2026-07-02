@@ -5,6 +5,7 @@ import { createCheckout } from "@/lib/chargily";
 import { tierPrice } from "@/lib/billing";
 import { rateLimit } from "@/lib/ratelimit";
 import { checkoutSchema, parseBody } from "@/lib/validation";
+import { trackServer } from "@/lib/events/collector";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,6 +37,12 @@ export async function POST(req: Request) {
   if (!payload) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
+
+  trackServer({
+    event_name: "checkout_open",
+    user_id: user.id,
+    properties: { tier: payload.tier },
+  });
 
   const tier = payload.tier;
   const amount = tierPrice(tier);

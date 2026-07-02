@@ -22,6 +22,12 @@ export const EVENT_NAMES = [
   "limit_hit",
   "upgrade_click",
   "upgrade_success",
+  // Phase 6.3 conversion funnel
+  "pricing_open",
+  "upgrade_open",
+  "checkout_open",
+  "checkout_complete",
+  "downgrade",
 ] as const;
 
 export type EventName = (typeof EVENT_NAMES)[number];

@@ -33,6 +33,8 @@ describe("validateEvent", () => {
     expect(EVENT_NAMES).toContain("first_bookmark");
     expect(EVENT_NAMES).toContain("limit_hit");
     expect(EVENT_NAMES).toContain("upgrade_success");
-    expect(EVENT_NAMES.length).toBe(18);
+    expect(EVENT_NAMES).toContain("checkout_complete");
+    expect(EVENT_NAMES).toContain("downgrade");
+    expect(EVENT_NAMES.length).toBe(23);
   });
 });

@@ -44,7 +44,11 @@ export default defineConfig({
         "lib/limits/policy.ts",
         "lib/limits/rollout.ts",
         "lib/limits/enforce.ts",
+        "lib/limits/usage.ts",
         "lib/activation/score.ts",
+        "lib/experiments.ts",
+        "lib/internal.ts",
+        "lib/analytics/revenue.ts",
         "app/api/**/route.ts",
       ],
       thresholds: {

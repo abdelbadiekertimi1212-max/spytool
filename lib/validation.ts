@@ -28,6 +28,10 @@ export const bookmarkSchema = z.object({
   productId: z.string().uuid(),
 });
 
+export const billingActionSchema = z.object({
+  action: z.enum(["cancel", "resume"]),
+});
+
 /** Parse a Request JSON body against a schema; returns data or null on failure. */
 export async function parseBody<T>(
   req: Request,

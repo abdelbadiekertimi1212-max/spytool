@@ -31,6 +31,13 @@ usually "flip a flag" or "promote the previous deploy" — not a data migration.
 - The collector is fire-and-forget; removing the single webhook `trackServer(...)` call fully reverts the only wiring with zero contract impact.
 - To drop schema (only if truly needed): new down-migration dropping `analytics_events`, `usage_counters`, `referrals`, `crm_enrichment`, `limit_rules` + `drop function public.increment_usage(...)`. No app table depends on them, so this is safe.
 
+## Monetization (Phase 6.3)
+- All additive + read-only display. No schema migration, no new dependency.
+- Pricing experiment off switch: unset `PRICING_EXPERIMENT` (or set ≠ `true`) → everyone sees Control ordering.
+- Revenue dashboard is gated by `INTERNAL_EMAILS`; clearing it makes `/dashboard/internal/revenue` 404 for all.
+- Billing cancel/resume only toggles `subscriptions.cancel_at_period_end` (no charge/refund) — reversible by the user or by a one-line update.
+- To hide the new surfaces: remove the `Usage` nav link + the current-plan/matrix blocks from the billing page (pure UI revert; no data change).
+
 ## Usage limits (Phase 6.2)
 - **Instant kill switch:** `ENABLE_USAGE_LIMITS=false` (or `LIMITS_ROLLOUT=0`) → all `enforceLimit` calls return allowed, routes behave exactly as pre-6.2. No deploy needed beyond the env change.
 - Partial rollback: lower `LIMITS_ROLLOUT` (sticky buckets shrink cleanly).

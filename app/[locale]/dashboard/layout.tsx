@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Radar, LayoutDashboard, Users, CreditCard, Activity } from "lucide-react";
+import { Radar, LayoutDashboard, Users, CreditCard, Activity, Gauge } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { Link } from "@/i18n/navigation";
@@ -53,6 +53,13 @@ export default async function DashboardLayout({
               >
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">{t("navLeads")}</span>
+              </Link>
+              <Link
+                href="/dashboard/usage"
+                className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <Gauge className="h-4 w-4" />
+                <span className="hidden sm:inline">{t("navUsage")}</span>
               </Link>
               <Link
                 href="/dashboard/billing"
